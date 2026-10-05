@@ -1,0 +1,69 @@
+name: cadastro-clientes
+services:
+  db:
+    image: postgres:18-alpine
+    restart: always
+    environment:
+        - POSTGRES_DB=${DB_NAME}
+        - POSTGRES_USER=${DB_USER}
+        - POSTGRES_PASSWORD=${DB_PASSWORD}
+    ports:
+        - "127.0.0.1:5432:5432"
+    volumes:
+        -  postgres_data:/var/lib/postgresql
+    networks:
+        - private_net
+    healthcheck:
+        test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+        interval: 10s
+        timeout: 5s
+        retries: 5
+        start_period: 15s
+
+  api:
+    build:
+        context: ./apps/api
+        dockerfile: Dockerfile
+    restart: always
+    ports:
+        - "127.0.0.1:3000:3000"
+    command: npm run dev
+    volumes:
+        - ./apps/api:/app
+        - /app/node_modules
+    depends_on:
+        db:
+            condition: service_healthy
+    networks:
+        - public_net
+        - private_net
+    healthcheck:
+        test: ["CMD", "node", "-e", "fetch('http://localhost:3000/health').then(res => res.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"] # Verifica o status de health da API
+        interval: 10s
+        timeout: 5s
+        retries: 3
+        start_period: 10s
+
+  web:
+    build:
+        context: ./apps/web
+        dockerfile: Dockerfile
+    restart: always
+    ports:
+        - "127.0.0.1:8080:8080"
+    volumes:
+        - ./apps/web:/app
+    depends_on:
+        api:
+            condition: service_healthy
+    networks:
+        - public_net
+
+networks:
+  private_net:
+    driver: bridge
+  public_net:
+    driver: bridge
+
+volumes:
+  postgres_data:
