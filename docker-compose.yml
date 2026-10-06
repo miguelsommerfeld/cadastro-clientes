@@ -25,9 +25,10 @@ services:
         context: ./apps/api
         dockerfile: Dockerfile
     restart: always
+    environment:
+        DB_URL: ${DB_URL}
     ports:
-        - "127.0.0.1:3000:3000"
-    command: npm run dev
+        - "127.0.0.1:3333:3333"
     volumes:
         - ./apps/api:/app
         - /app/node_modules
@@ -37,8 +38,9 @@ services:
     networks:
         - public_net
         - private_net
+    command: sh -c 'npx prisma db migrate && npx prisma db update && npm run dev' # Aplica as migrações antes de iniciar a aplicação
     healthcheck:
-        test: ["CMD", "node", "-e", "fetch('http://localhost:3000/health').then(res => res.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"] # Verifica o status de health da API
+        test: ["CMD", "node", "-e", "fetch('http://localhost:3333/health').then(res => res.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"] # Verifica o status de health da API
         interval: 10s
         timeout: 5s
         retries: 3
