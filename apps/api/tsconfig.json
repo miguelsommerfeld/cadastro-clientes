@@ -1,8 +1,11 @@
 {
   "compilerOptions": {
+    "types": [
+      "node"
+    ],
     "target": "ES2022",
-    "module": "nodenext",
-    "moduleResolution": "nodenext",
+    "module": "preserve",
+    "moduleResolution": "bundler",
     "outDir": "dist",
     "rootDir": "src",
     "sourceMap": true,
@@ -10,13 +13,13 @@
     "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
     "strict": true,
-    "types": ["node"],
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "allowImportingTsExtensions": true,
-    "noEmit": true
+    "noEmit": true,
+    "resolveJsonModule": true
   },
   "include": ["src/**/*.ts"]
 }
