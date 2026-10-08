@@ -1,7 +1,7 @@
 import { FastifyPluginAsyncZod } from '@fastify/type-provider-zod';
 import { z } from 'zod';
 
-const healthCheck: FastifyPluginAsyncZod = async (fastify) => {
+export default async (fastify: any) => {
     fastify.get('/health', {
         schema: {
             response: {
@@ -10,9 +10,7 @@ const healthCheck: FastifyPluginAsyncZod = async (fastify) => {
                 }),
             },
         },
-    }, async (request, reply) => {
+    }, async (request: any, reply: any) => {
         return { status: 200 };
     })
 }
-
-export default healthCheck;
