@@ -18,7 +18,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'ec67bfb054406d9b7cdbfc72583d1b8718dda90097ebc98b4220c4e1432da7a7'>;
+  StorageHashBase<'64486d1cb6ed92929cbc0e3cc5aed5e31efbb2f84882fdc7e9a73a33168df698'>;
 export type ExecutionHash =
   ExecutionHashBase<'ea2beb17440edf8ea3bd5ca66464f0165c1911ea4c8a3704b766eaa58f24e1f0'>;
 export type ProfileHash =
@@ -238,7 +238,7 @@ export type FieldOutputTypes = {
       readonly birthDate: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
       readonly deletedAt: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
-      readonly document: Varchar<14>;
+      readonly document: 'INDIVIDUAL' | 'COMPANY';
       readonly email: Varchar<254> | null;
       readonly id: CodecTypes['pg/text@1']['output'];
       readonly name: Varchar<150>;
@@ -255,7 +255,7 @@ export type FieldInputTypes = {
       readonly birthDate: CodecTypes['pg/timestamptz-temporal@1']['input'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
       readonly deletedAt: CodecTypes['pg/timestamptz-temporal@1']['input'] | null;
-      readonly document: CodecTypes['sql/varchar@1']['input'];
+      readonly document: 'INDIVIDUAL' | 'COMPANY';
       readonly email: CodecTypes['sql/varchar@1']['input'] | null;
       readonly id: CodecTypes['pg/text@1']['input'];
       readonly name: CodecTypes['sql/varchar@1']['input'];
@@ -272,7 +272,7 @@ export type StorageColumnTypes = {
       readonly birth_date: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
       readonly created_at: CodecTypes['pg/timestamptz-temporal@1']['output'];
       readonly deleted_at: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
-      readonly document: Varchar<14>;
+      readonly document: 'INDIVIDUAL' | 'COMPANY';
       readonly email: Varchar<254> | null;
       readonly id: CodecTypes['pg/text@1']['output'];
       readonly name: Varchar<150>;
@@ -289,7 +289,7 @@ export type StorageColumnInputTypes = {
       readonly birth_date: CodecTypes['pg/timestamptz-temporal@1']['input'] | null;
       readonly created_at: CodecTypes['pg/timestamptz-temporal@1']['input'];
       readonly deleted_at: CodecTypes['pg/timestamptz-temporal@1']['input'] | null;
-      readonly document: CodecTypes['sql/varchar@1']['input'];
+      readonly document: 'INDIVIDUAL' | 'COMPANY';
       readonly email: CodecTypes['sql/varchar@1']['input'] | null;
       readonly id: CodecTypes['pg/text@1']['input'];
       readonly name: CodecTypes['sql/varchar@1']['input'];
@@ -306,7 +306,7 @@ export namespace Models {
     birthDate: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
     createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     deletedAt: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
-    document: Varchar<14>;
+    document: 'INDIVIDUAL' | 'COMPANY';
     email: Varchar<254> | null;
     id: CodecTypes['pg/text@1']['output'];
     name: Varchar<150>;
@@ -364,10 +364,9 @@ type ContractBase = Omit<
                   readonly many: false;
                 };
                 readonly document: {
-                  readonly dataType: 'pg/varchar';
-                  readonly codecId: 'sql/varchar@1';
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
                   readonly nullable: false;
-                  readonly typeParams: { readonly length: 14 };
                   readonly many: false;
                 };
                 readonly email: {
@@ -473,11 +472,7 @@ type ContractBase = Omit<
               };
               readonly document: {
                 readonly nullable: false;
-                readonly type: {
-                  readonly kind: 'scalar';
-                  readonly codecId: 'sql/varchar@1';
-                  readonly typeParams: { readonly length: 14 };
-                };
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly email: {
                 readonly nullable: true;

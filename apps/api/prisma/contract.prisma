@@ -3,12 +3,13 @@
 enum PersonType {
     INDIVIDUAL
     COMPANY
+    @@type("pg/text@1")
 }
 
 model Customers {
     id         String        @id @default(uuid()) @unique @map("id")
     personType PersonType    @map("person_type")
-    document   VarChar(14)   @unique @map("document")
+    document   PersonType    @unique @map("document")
     name       VarChar(150)  @map("name")
     tradeName  VarChar(150)? @map("trade_name")
     birthDate  DateTime?     @map("birth_date")

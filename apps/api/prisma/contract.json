@@ -54,11 +54,14 @@
               "document": {
                 "nullable": false,
                 "type": {
-                  "codecId": "sql/varchar@1",
-                  "kind": "scalar",
-                  "typeParams": {
-                    "length": 14
-                  }
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "PersonType",
+                  "namespaceId": "public",
+                  "plane": "domain"
                 }
               },
               "email": {
@@ -182,6 +185,11 @@
             "customers": {
               "checks": [
                 {
+                  "expression": "\"document\" IN ('INDIVIDUAL', 'COMPANY')",
+                  "name": "customers_document_check_1c70a9e7",
+                  "prefix": "customers_document_check"
+                },
+                {
                   "expression": "\"person_type\" IN ('INDIVIDUAL', 'COMPANY')",
                   "name": "customers_person_type_check_5522ac3e",
                   "prefix": "customers_person_type_check"
@@ -208,11 +216,14 @@
                   "nullable": true
                 },
                 "document": {
-                  "codecId": "sql/varchar@1",
-                  "dataType": "pg/varchar",
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
                   "nullable": false,
-                  "typeParams": {
-                    "length": 14
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "PersonType",
+                    "namespaceId": "public",
+                    "plane": "storage"
                   }
                 },
                 "email": {
@@ -304,7 +315,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "ec67bfb054406d9b7cdbfc72583d1b8718dda90097ebc98b4220c4e1432da7a7"
+    "storageHash": "64486d1cb6ed92929cbc0e3cc5aed5e31efbb2f84882fdc7e9a73a33168df698"
   },
   "execution": {
     "executionHash": "ea2beb17440edf8ea3bd5ca66464f0165c1911ea4c8a3704b766eaa58f24e1f0",
