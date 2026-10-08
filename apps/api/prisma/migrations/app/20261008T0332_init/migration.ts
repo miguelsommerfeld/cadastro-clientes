@@ -1,6 +1,6 @@
 #!/usr/bin/env -S node
-import type { Contract as End } from '../../snapshots/01c4c100da99e22d03af7c6eebe7047fa9ee4d7d4a39b76f5100e53cd408f96d/contract';
-import endContract from '../../snapshots/01c4c100da99e22d03af7c6eebe7047fa9ee4d7d4a39b76f5100e53cd408f96d/contract.json' with { type: 'json' };
+import type { Contract as End } from '../../snapshots/ec67bfb054406d9b7cdbfc72583d1b8718dda90097ebc98b4220c4e1432da7a7/contract';
+import endContract from '../../snapshots/ec67bfb054406d9b7cdbfc72583d1b8718dda90097ebc98b4220c4e1432da7a7/contract.json' with { type: 'json' };
 import {
   Migration,
   MigrationCLI,
@@ -56,7 +56,7 @@ export default class M extends Migration<never, End> {
           primaryKey(['id']),
           checkExpression(
             'customers_person_type_check_5522ac3e',
-            "\"person_type\" IN ('INDIVIDUAL', 'COMPANY')",
+            `"person_type" IN ('INDIVIDUAL', 'COMPANY')`,
           ),
         ],
       }),

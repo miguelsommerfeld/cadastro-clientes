@@ -3,11 +3,16 @@
     "types": [
       "node"
     ],
+    "paths": {
+      "@/*": ["./src/*"],
+      "@db": ["./prisma/db.ts"],
+      "@packages/*": ["./../../packages/*.ts"]
+    },
     "target": "ES2022",
     "module": "preserve",
     "moduleResolution": "bundler",
     "outDir": "dist",
-    "rootDir": "src",
+    "rootDir": "./../../",
     "sourceMap": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
@@ -21,5 +26,5 @@
     "noEmit": true,
     "resolveJsonModule": true
   },
-  "include": ["src/**/*.ts"]
+  "include": ["./src/**/*.ts", "./config/**/*.ts", "./../../packages/*.ts"]
 }

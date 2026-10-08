@@ -22,16 +22,16 @@ services:
 
   api:
     build:
-        context: ./apps/api
-        dockerfile: Dockerfile
+        context: ./
+        dockerfile: apps/api/Dockerfile
     restart: always
     environment:
         DB_URL: ${DB_URL}
     ports:
         - "127.0.0.1:3333:3333"
     volumes:
-        - ./apps/api:/app
-        - /app/node_modules
+        - ./apps/api:/cadastro_clientes/apps/api
+        - ./packages:/cadastro_clientes/packages
     depends_on:
         db:
             condition: service_healthy
@@ -48,13 +48,13 @@ services:
 
   web:
     build:
-        context: ./apps/web
-        dockerfile: Dockerfile
+        context: ./
+        dockerfile: apps/web/Dockerfile
     restart: always
     ports:
         - "127.0.0.1:8080:8080"
     volumes:
-        - ./apps/web:/app
+        - ./apps/web:/cadastro_clientes/apps/web
     depends_on:
         api:
             condition: service_healthy
