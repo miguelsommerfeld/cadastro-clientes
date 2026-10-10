@@ -1,0 +1,16 @@
+{
+    "servers": {
+        "github-projects": {
+            "command": "bash",
+            "args": [
+                "-lc",
+                "set -a && . /home/miguelsommerfeld/Projects/cadastro_clientes/.env && set +a && exec npx --yes @iflow-mcp/taylor-lindores-reeves-mcp-github-projects"
+            ],
+            "env": {
+                "GITHUB_OWNER": "miguelsommerfeld",
+                "GITHUB_OWNER_TYPE": "user",
+                "ALLOWED_REPOS": "miguelsommerfeld/cadastro_clientes"
+            }
+        }
+    }
+}
