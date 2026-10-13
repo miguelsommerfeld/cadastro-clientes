@@ -18,6 +18,7 @@
     "install": "^0.13.0",
     "npm": "^12.2.0",
     "serve": "^10.0.2",
+    "temporal-polyfill": "^1.0.5",
     "zod": "^4.6.5"
   },
   "devDependencies": {

@@ -1,4 +1,5 @@
 import { CustomerModel } from "@/models/CustomerModel";
+import type { CustomerRegistration } from "@packages/contracts/customer.schema";
 
 export class CustomerRepository
 {
@@ -9,18 +10,23 @@ export class CustomerRepository
         this.model = model;
     }
 
-    public registerCustomer(userData: any): void
+    public registerCustomer(customerData: CustomerRegistration)
     {
-        this.model.registerCustomer(userData);
+        return this.model.registerCustomer(customerData);
+    }
+
+    public isDocumentUnique(customerDocument: string): Promise<boolean>
+    {
+        return this.model.isDocumentUnique(customerDocument);
     }
 
     public async getAllCustomers()
     {
-        return this.model.getAllCustomers;
+        return this.model.getAllCustomers();
     }
 
-    public getCustomerById(id: string): void
+    public async getCustomer(id: string)
     {
-        //return this.model.getCustomerById(id);
+        return await this.model.getCustomer(id);
     }
 }

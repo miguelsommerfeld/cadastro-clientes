@@ -33,7 +33,7 @@
               "birthDate": {
                 "nullable": true,
                 "type": {
-                  "codecId": "pg/timestamptz-temporal@1",
+                  "codecId": "pg/date-temporal@1",
                   "kind": "scalar"
                 }
               },
@@ -54,14 +54,11 @@
               "document": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                },
-                "valueSet": {
-                  "entityKind": "enum",
-                  "entityName": "PersonType",
-                  "namespaceId": "public",
-                  "plane": "domain"
+                  "codecId": "sql/varchar@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "length": 14
+                  }
                 }
               },
               "email": {
@@ -125,7 +122,7 @@
                 }
               },
               "updatedAt": {
-                "nullable": false,
+                "nullable": true,
                 "type": {
                   "codecId": "pg/timestamptz-temporal@1",
                   "kind": "scalar"
@@ -185,11 +182,6 @@
             "customers": {
               "checks": [
                 {
-                  "expression": "\"document\" IN ('INDIVIDUAL', 'COMPANY')",
-                  "name": "customers_document_check_1c70a9e7",
-                  "prefix": "customers_document_check"
-                },
-                {
                   "expression": "\"person_type\" IN ('INDIVIDUAL', 'COMPANY')",
                   "name": "customers_person_type_check_5522ac3e",
                   "prefix": "customers_person_type_check"
@@ -197,8 +189,8 @@
               ],
               "columns": {
                 "birth_date": {
-                  "codecId": "pg/timestamptz-temporal@1",
-                  "dataType": "pg/timestamptz",
+                  "codecId": "pg/date-temporal@1",
+                  "dataType": "pg/date",
                   "nullable": true
                 },
                 "created_at": {
@@ -216,14 +208,11 @@
                   "nullable": true
                 },
                 "document": {
-                  "codecId": "pg/text@1",
-                  "dataType": "pg/text",
+                  "codecId": "sql/varchar@1",
+                  "dataType": "pg/varchar",
                   "nullable": false,
-                  "valueSet": {
-                    "entityKind": "valueSet",
-                    "entityName": "PersonType",
-                    "namespaceId": "public",
-                    "plane": "storage"
+                  "typeParams": {
+                    "length": 14
                   }
                 },
                 "email": {
@@ -277,7 +266,7 @@
                 "updated_at": {
                   "codecId": "pg/timestamptz-temporal@1",
                   "dataType": "pg/timestamptz",
-                  "nullable": false
+                  "nullable": true
                 }
               },
               "foreignKeys": [],
@@ -297,6 +286,11 @@
                   "columns": [
                     "document"
                   ]
+                },
+                {
+                  "columns": [
+                    "email"
+                  ]
                 }
               ]
             }
@@ -315,7 +309,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "64486d1cb6ed92929cbc0e3cc5aed5e31efbb2f84882fdc7e9a73a33168df698"
+    "storageHash": "d4beb8c9174667406f9da23807536cc554461f12fb13a0dafcf0564c54689742"
   },
   "execution": {
     "executionHash": "ea2beb17440edf8ea3bd5ca66464f0165c1911ea4c8a3704b766eaa58f24e1f0",

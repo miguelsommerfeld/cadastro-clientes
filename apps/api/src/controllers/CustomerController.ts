@@ -1,5 +1,9 @@
 import { CustomerService } from "@/services/CustomerService";
-import customerRequestSchema from "@packages/contracts/customer.schema";
+import type {
+    CustomerRegistration,
+    CustomerResponse
+} from "@packages/contracts/customer.schema";
+import type { DocumentValidation } from '@packages/contracts/document.schema'
 
 export class CustomerController
 {
@@ -10,12 +14,22 @@ export class CustomerController
         this.service = service;
     }
 
-    public registerCustomer(userData: typeof customerRequestSchema): void
+    public registerCustomer(customerData: CustomerRegistration): Promise<CustomerResponse>
     {
-        this.service.registerCustomer(userData);
+        return this.service.registerCustomer(customerData);
     }
 
-    public getAllCustomers(): object
+    public isDocumentUnique(customerDocument: string): Promise<DocumentValidation>
+    {
+        return this.service.isDocumentUnique(customerDocument);
+    }
+
+    public async getCustomer(id: string)
+    {
+        return await this.service.getCustomer(id);
+    }
+
+    public getAllCustomers(): Promise<CustomerResponse[]>
     {
         return this.service.getAllCustomers();
     }

@@ -8,7 +8,7 @@ export default fp(async (server) => {
     const customerModel: CustomerModel = new CustomerModel();
 
     const customerRepository: CustomerRepository =
-        new CustomerRepository(new CustomerModel());
+        new CustomerRepository(customerModel);
 
     const customerService: CustomerService =
         new CustomerService(customerRepository);
