@@ -52,12 +52,12 @@ export class CustomerModel
         return !customer;
     }
 
-    public async getCustomer(id: string): Promise<CustomerResponse>
+    public async getCustomer(id: string): Promise<CustomerResponse | null>
     {
         const customer = await db.orm.public.Customers.where({ id }).first();
 
         if (!customer) {
-            throw new Error(`Customer with id ${id} was not found`);
+            return null;
         }
 
         return {

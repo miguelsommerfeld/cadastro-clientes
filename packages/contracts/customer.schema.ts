@@ -3,7 +3,7 @@ import { cnpj, cpf } from 'cpf-cnpj-validator'
 import type { output } from 'zod'
 
 const customerFields = {
-    name: z.string().trim().min(1, "O nome é obrigatório").max(150),
+    name: z.string().trim().min(3, "O nome deve conter ao menos 3 caracteres").max(150),
     email: z.email("Insira um formato de e-mail válido para realizar o cadastro").max(254),
     phone: z.phone().country('BR')
         .transform((value) => value.nationalNumber.replace(/\D/g, ''))

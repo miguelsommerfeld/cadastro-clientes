@@ -12,7 +12,7 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server) {
             body: customersRequestSchema,
             response: {
                 201: customersResponseSchema,
-                400: documentValidation,
+                400: z.union([documentValidation, z.object({ message: z.string()})]),
                 409: documentValidation
             }
         },
@@ -33,8 +33,12 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server) {
                 });
             }
 
-            const customer = await this.customerController.registerCustomer(req.body);
-            return res.status(201).send(customer);
+            try {
+                const customer = await this.customerController.registerCustomer(req.body);
+                return res.status(201).send(customer);
+            } catch (err) {
+                return res.status(400).send({ message: "Dados inválidos" })
+            }
         }
     });
 
@@ -47,7 +51,10 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server) {
                 200: z.union([
                     customersResponseSchema,
                     customersResponseSchema.array()
-                ])
+                ]),
+                404: z.object({
+                    message: z.string()
+                })
             }
         },
         handler: async function (req, res) {
@@ -55,6 +62,11 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server) {
 
             if (id) {
                 const customer = await this.customerController.getCustomer(id);
+
+                if (customer === null) {
+                    return res.status(404).send({ message: "Cliente não encontrado." });
+                }
+
                 return res.status(200).send(customer);
             }
 
