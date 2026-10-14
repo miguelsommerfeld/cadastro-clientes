@@ -1,0 +1,125 @@
+[
+  {
+    "id": "table.addresses",
+    "label": "Create table \"addresses\"",
+    "summary": "Creates table \"addresses\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "addresses"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"addresses\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"addresses\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"addresses\"",
+        "sql": "CREATE TABLE \"public\".\"addresses\" (\n  \"city\" character varying(100) NOT NULL,\n  \"complement\" character varying(100) NOT NULL,\n  \"customer_id\" text NOT NULL,\n  \"district\" character varying(100) NOT NULL,\n  \"id\" text NOT NULL,\n  \"number\" character varying(10) DEFAULT 'S/N',\n  \"state\" character varying(2) NOT NULL,\n  \"street\" character varying(150) NOT NULL,\n  \"zip_code\" character varying(8) NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"addresses\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"addresses\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.addresses.addresses_id_key",
+    "label": "Add unique constraint on \"addresses\" (id)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "addresses_id_key",
+        "table": "addresses"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"addresses_id_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "addresses_id_key",
+          "public",
+          "\"public\".\"addresses\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"addresses_id_key\"",
+        "sql": "ALTER TABLE \"public\".\"addresses\" ADD CONSTRAINT \"addresses_id_key\" UNIQUE (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"addresses_id_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "addresses_id_key",
+          "public",
+          "\"public\".\"addresses\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.addresses.addresses_customer_id_key",
+    "label": "Add unique constraint on \"addresses\" (customer_id)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "addresses_customer_id_key",
+        "table": "addresses"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"addresses_customer_id_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "addresses_customer_id_key",
+          "public",
+          "\"public\".\"addresses\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"addresses_customer_id_key\"",
+        "sql": "ALTER TABLE \"public\".\"addresses\" ADD CONSTRAINT \"addresses_customer_id_key\" UNIQUE (\"customer_id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"addresses_customer_id_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "addresses_customer_id_key",
+          "public",
+          "\"public\".\"addresses\""
+        ]
+      }
+    ]
+  }
+]

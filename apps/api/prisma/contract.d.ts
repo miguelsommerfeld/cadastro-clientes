@@ -18,9 +18,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'d4beb8c9174667406f9da23807536cc554461f12fb13a0dafcf0564c54689742'>;
+  StorageHashBase<'a1398f020a3d344a085758e38ddbb76b9da8e9045351b1bceac45fd368f3f108'>;
 export type ExecutionHash =
-  ExecutionHashBase<'ea2beb17440edf8ea3bd5ca66464f0165c1911ea4c8a3704b766eaa58f24e1f0'>;
+  ExecutionHashBase<'8ec3e0ad7e78f18bc2a71fd162ac635a941999fb049bdf8744f226a9b610dab7'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -234,6 +234,17 @@ type DefaultLiteralValue<CodecId extends string, Encoded> = CodecId extends keyo
 
 export type FieldOutputTypes = {
   readonly public: {
+    readonly Addresses: {
+      readonly city: Varchar<100>;
+      readonly complement: Varchar<100>;
+      readonly customerId: CodecTypes['pg/text@1']['output'];
+      readonly district: Varchar<100>;
+      readonly id: CodecTypes['pg/text@1']['output'];
+      readonly number: Varchar<10> | null;
+      readonly state: Varchar<2>;
+      readonly street: Varchar<150>;
+      readonly zipCode: Varchar<8>;
+    };
     readonly Customers: {
       readonly birthDate: CodecTypes['pg/date-temporal@1']['output'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
@@ -251,6 +262,17 @@ export type FieldOutputTypes = {
 };
 export type FieldInputTypes = {
   readonly public: {
+    readonly Addresses: {
+      readonly city: CodecTypes['sql/varchar@1']['input'];
+      readonly complement: CodecTypes['sql/varchar@1']['input'];
+      readonly customerId: CodecTypes['pg/text@1']['input'];
+      readonly district: CodecTypes['sql/varchar@1']['input'];
+      readonly id: CodecTypes['pg/text@1']['input'];
+      readonly number: CodecTypes['sql/varchar@1']['input'] | null;
+      readonly state: CodecTypes['sql/varchar@1']['input'];
+      readonly street: CodecTypes['sql/varchar@1']['input'];
+      readonly zipCode: CodecTypes['sql/varchar@1']['input'];
+    };
     readonly Customers: {
       readonly birthDate: CodecTypes['pg/date-temporal@1']['input'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
@@ -268,6 +290,17 @@ export type FieldInputTypes = {
 };
 export type StorageColumnTypes = {
   readonly public: {
+    readonly addresses: {
+      readonly city: Varchar<100>;
+      readonly complement: Varchar<100>;
+      readonly customer_id: CodecTypes['pg/text@1']['output'];
+      readonly district: Varchar<100>;
+      readonly id: CodecTypes['pg/text@1']['output'];
+      readonly number: Varchar<10> | null;
+      readonly state: Varchar<2>;
+      readonly street: Varchar<150>;
+      readonly zip_code: Varchar<8>;
+    };
     readonly customers: {
       readonly birth_date: CodecTypes['pg/date-temporal@1']['output'] | null;
       readonly created_at: CodecTypes['pg/timestamptz-temporal@1']['output'];
@@ -285,6 +318,17 @@ export type StorageColumnTypes = {
 };
 export type StorageColumnInputTypes = {
   readonly public: {
+    readonly addresses: {
+      readonly city: CodecTypes['sql/varchar@1']['input'];
+      readonly complement: CodecTypes['sql/varchar@1']['input'];
+      readonly customer_id: CodecTypes['pg/text@1']['input'];
+      readonly district: CodecTypes['sql/varchar@1']['input'];
+      readonly id: CodecTypes['pg/text@1']['input'];
+      readonly number: CodecTypes['sql/varchar@1']['input'] | null;
+      readonly state: CodecTypes['sql/varchar@1']['input'];
+      readonly street: CodecTypes['sql/varchar@1']['input'];
+      readonly zip_code: CodecTypes['sql/varchar@1']['input'];
+    };
     readonly customers: {
       readonly birth_date: CodecTypes['pg/date-temporal@1']['input'] | null;
       readonly created_at: CodecTypes['pg/timestamptz-temporal@1']['input'];
@@ -302,6 +346,18 @@ export type StorageColumnInputTypes = {
 };
 
 export namespace Models {
+  export type public_Addresses = {
+    city: Varchar<100>;
+    complement: Varchar<100>;
+    customerId: CodecTypes['pg/text@1']['output'];
+    district: Varchar<100>;
+    id: CodecTypes['pg/text@1']['output'];
+    number: Varchar<10> | null;
+    state: Varchar<2>;
+    street: Varchar<150>;
+    zipCode: Varchar<8>;
+    readonly [RelationKeys]?: never;
+  };
   export type public_Customers = {
     birthDate: CodecTypes['pg/date-temporal@1']['output'] | null;
     createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
@@ -320,6 +376,7 @@ export namespace Models {
 
 export declare const models: {
   public: {
+    Addresses: Models.public_Addresses;
     Customers: Models.public_Customers;
   };
 };
@@ -342,6 +399,82 @@ type ContractBase = Omit<
         readonly kind: 'postgres-schema';
         readonly entries: {
           readonly table: {
+            readonly addresses: {
+              columns: {
+                readonly city: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly length: 100 };
+                  readonly many: false;
+                };
+                readonly complement: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly length: 100 };
+                  readonly many: false;
+                };
+                readonly customer_id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly district: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly length: 100 };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly number: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: true;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'sql/varchar@1', 'S/N'>;
+                  };
+                  readonly typeParams: { readonly length: 10 };
+                  readonly many: false;
+                };
+                readonly state: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly length: 2 };
+                  readonly many: false;
+                };
+                readonly street: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly length: 150 };
+                  readonly many: false;
+                };
+                readonly zip_code: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly length: 8 };
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [
+                { readonly columns: readonly ['id'] },
+                { readonly columns: readonly ['customer_id'] },
+              ];
+              indexes: readonly [];
+              foreignKeys: readonly [];
+            };
             readonly customers: {
               columns: {
                 readonly birth_date: {
@@ -443,12 +576,97 @@ type ContractBase = Omit<
   readonly target: 'postgres';
   readonly targetFamily: 'sql';
   readonly roots: {
+    readonly addresses: { readonly namespace: 'public' & NamespaceId; readonly model: 'Addresses' };
     readonly customers: { readonly namespace: 'public' & NamespaceId; readonly model: 'Customers' };
   };
   readonly domain: {
     readonly namespaces: {
       readonly public: {
         readonly models: {
+          readonly Addresses: {
+            readonly fields: {
+              readonly city: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 100 };
+                };
+              };
+              readonly complement: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 100 };
+                };
+              };
+              readonly customerId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly district: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 100 };
+                };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly number: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 10 };
+                };
+              };
+              readonly state: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 2 };
+                };
+              };
+              readonly street: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 150 };
+                };
+              };
+              readonly zipCode: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 8 };
+                };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'addresses';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly city: { readonly column: 'city' };
+                readonly complement: { readonly column: 'complement' };
+                readonly customerId: { readonly column: 'customer_id' };
+                readonly district: { readonly column: 'district' };
+                readonly id: { readonly column: 'id' };
+                readonly number: { readonly column: 'number' };
+                readonly state: { readonly column: 'state' };
+                readonly street: { readonly column: 'street' };
+                readonly zipCode: { readonly column: 'zip_code' };
+              };
+            };
+          };
           readonly Customers: {
             readonly fields: {
               readonly birthDate: {
@@ -589,6 +807,14 @@ type ContractBase = Omit<
     readonly executionHash: ExecutionHash;
     readonly mutations: {
       readonly defaults: readonly [
+        {
+          readonly onCreate: { readonly id: 'uuidv4'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'addresses';
+            readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
         {
           readonly onCreate: { readonly id: 'uuidv4'; readonly kind: 'generator' };
           readonly ref: {

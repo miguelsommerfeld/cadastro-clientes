@@ -1,4 +1,5 @@
 import { CustomerRepository } from "@/repositories/CustomerRepository";
+import type { AddressRequestSchema } from "@packages/contracts/address.schema";
 import type {
     CustomerRegistration,
     CustomerResponse
@@ -15,9 +16,9 @@ export class CustomerService
         this.repository = repository;
     }
 
-    public async registerCustomer(customerData: CustomerRegistration): Promise<CustomerResponse>
+    public async registerCustomer(customerData: CustomerRegistration, addressData: AddressRequestSchema): Promise<CustomerResponse>
     {
-        const customer = await this.repository.registerCustomer(customerData);
+        const customer = await this.repository.registerCustomer(customerData, addressData);
 
         return this.toCustomerResponse(customer);
     }
@@ -44,8 +45,10 @@ export class CustomerService
         }
     }
 
-    public async getCustomer(id: string) {
-        return await this.repository.getCustomer(id);
+    public async getCustomer(id: string): Promise<CustomerResponse | null> {
+        const customer = await this.repository.getCustomer(id);
+
+        return customer ? this.toCustomerResponse(customer) : null;
     }
 
     public async getAllCustomers(): Promise<CustomerResponse[]> {
@@ -59,17 +62,68 @@ export class CustomerService
         return cpf.isValid(customerDocument) || cnpj.isValid(customerDocument);
     }
 
-    private toCustomerResponse(customer: Awaited<ReturnType<CustomerRepository['registerCustomer']>>): CustomerResponse
-    {
+    public async isEmailRegistered(userEmail: string): Promise<DocumentValidation> {
+        const isAlreadyRegistered = await this.repository.isEmailRegistered(userEmail);
+
+        if (isAlreadyRegistered) {
+            return {
+                status: 400,
+                message: "O e-mail digitado já está cadastrado"
+            };
+        }
+
         return {
-            id: customer.id,
-            personType: customer.personType,
-            document: customer.document,
-            name: customer.name,
-            tradeName: customer.tradeName,
-            birthDate: customer.birthDate?.toString() ?? null,
-            email: customer.email,
-            phone: customer.phone
+            status: 200,
+            message: null
+        };
+    }
+
+    private toCustomerResponse(
+        customer: Awaited<ReturnType<CustomerRepository['getAllCustomers']>>[number]
+    ): CustomerResponse
+    {
+        const responseFields = {
+            id: customer.customer.id,
+            name: customer.customer.name,
+            document: customer.customer.document,
+            ...(customer.customer.email !== null && { email: customer.customer.email }),
+            phone: customer.customer.phone,
+            ...(customer.address && {
+                address: {
+                    zipCode: customer.address.zipCode,
+                    street: customer.address.street,
+                    ...(customer.address.number !== null && { number: customer.address.number }),
+                    complement: customer.address.complement,
+                    district: customer.address.district,
+                    city: customer.address.city,
+                    state: customer.address.state
+                }
+            }),
+            createdAt: customer.customer.createdAt.toString(),
+            ...(customer.customer.updatedAt !== null && {
+                updatedAt: customer.customer.updatedAt.toString()
+            }),
+            deletedAt: customer.customer.deletedAt?.toString() ?? null
+        };
+
+        if (customer.customer.personType === 'INDIVIDUAL') {
+            if (customer.customer.birthDate === null) {
+                throw new Error(`Individual customer ${customer.customer.id} has no birth date`);
+            }
+
+            return {
+                ...responseFields,
+                personType: 'INDIVIDUAL',
+                birthDate: customer.customer.birthDate.toString()
+            };
+        }
+
+        return {
+            ...responseFields,
+            personType: 'COMPANY',
+            ...(customer.customer.tradeName !== null && {
+                tradeName: customer.customer.tradeName
+            })
         };
     }
 }

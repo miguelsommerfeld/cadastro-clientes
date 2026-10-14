@@ -1,79 +1,93 @@
 import { randomUUID } from 'node:crypto';
-import { db } from '@db';
-import type { CustomerRegistration, CustomerResponse } from '@packages/contracts/customer.schema';
-import type { Varchar } from '@prisma/orm-postgres/target/codec-types';
+import type { CustomerRegistration } from '@packages/contracts/customer.schema'
 import { Temporal } from 'temporal-polyfill';
 import type { Models } from '../../prisma/contract';
+import { Model } from './Model'
+import type { AddressRequestSchema } from '@packages/contracts/address.schema';
+import { AddressModel } from '@/models/AddressModel'
 
-// Casts from string to a Varchar type
-function toVarchar<Length extends number>(value: string, maxLength: Length): Varchar<Length>
-{
-    if ([...value].length > maxLength) {
-        throw new RangeError(`Value exceeds the maximum length of ${maxLength}`);
+export class CustomerModel extends Model {
+    private readonly addressModel: AddressModel;
+
+    constructor(addressModel: AddressModel)
+    {
+        super();
+        this.addressModel = addressModel;
     }
 
-    // The generated Prisma contract brands varchar values by their declared length.
-    return value as Varchar<Length>;
-}
-
-export class CustomerModel
-{
-    public registerCustomer(customerData: CustomerRegistration)
+    public async registerCustomer(customerData: CustomerRegistration, addressData: AddressRequestSchema)
     {
         const now = Temporal.Now.instant();
         const customer = {
             id: randomUUID(),
             personType: customerData.personType,
-            document: toVarchar(customerData.document, 14),
-            name: toVarchar(customerData.name, 150),
+            document: this.toVarchar(customerData.document, 14),
+            name: this.toVarchar(customerData.name, 150),
             tradeName: customerData.personType === 'COMPANY' && customerData.tradeName
-                ? toVarchar(customerData.tradeName, 150)
+                ? this.toVarchar(customerData.tradeName, 150)
                 : null,
             birthDate: customerData.personType === 'INDIVIDUAL'
                 ? Temporal.PlainDate.from(customerData.birthDate)
                 : null,
-            email: toVarchar(customerData.email, 254),
-            phone: toVarchar(customerData.phone, 11),
+            email: this.toVarchar(customerData.email, 254),
+            phone: this.toVarchar(customerData.phone, 11),
             createdAt: now,
-            updatedAt: null,
+            updatedAt: now,
             deletedAt: null
         } satisfies Models.public_Customers;
 
-        return db.orm.public.Customers.create(customer);
+        const savedCustomer = await this.db.orm.public.Customers.create(customer);
+        const address = await this.addressModel.registerAddress(savedCustomer.id, addressData);
+
+        return {
+            customer: savedCustomer,
+            address
+        }
     }
 
     // Verifies if the document is already registered in the database
     public async isDocumentUnique(customerDocument: string): Promise<boolean>
     {
-        const customer = await db.orm.public.Customers
-            .where({ document: toVarchar(customerDocument, 14) })
+        const customer = await this.db.orm.public.Customers
+            .where({ document: this.toVarchar(customerDocument, 14) })
             .first();
 
         return !customer;
     }
 
-    public async getCustomer(id: string): Promise<CustomerResponse | null>
+    public async isEmailRegistered(userEmail: string): Promise<boolean>
     {
-        const customer = await db.orm.public.Customers.where({ id }).first();
+        const response = await this.db.orm.public.Customers
+            .where({ email: this.toVarchar(userEmail, 254) })
+            .first();
+
+        return !!response;
+    }
+
+    public async getCustomer(id: string)
+    {
+        const customer = await this.db.orm.public.Customers.where({ id }).first();
 
         if (!customer) {
             return null;
         }
 
-        return {
-            id: customer.id,
-            personType: customer.personType,
-            document: customer.document,
-            name: customer.name,
-            tradeName: customer.tradeName,
-            birthDate: customer.birthDate?.toString() ?? null,
-            email: customer.email,
-            phone: customer.phone
-        };
+        const address = await this.addressModel.getAddress(customer.id);
+
+        return { customer, address };
     }
 
-    public getAllCustomers()
+    public async getAllCustomers()
     {
-        return db.orm.public.Customers.all();
+        const [customers, addresses] = await Promise.all([
+            this.db.orm.public.Customers.all(),
+            this.addressModel.getAllAddresses()
+        ]);
+        const addressesByCustomerId = new Map(addresses.map((address) => [address.customerId, address]));
+
+        return customers.map((customer) => ({
+            customer,
+            address: addressesByCustomerId.get(customer.id) ?? null
+        }));
     }
 }

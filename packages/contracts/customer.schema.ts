@@ -1,6 +1,7 @@
 import { z } from "@victorfernandesraton/zod-phonenumber"
 import { cnpj, cpf } from 'cpf-cnpj-validator'
 import type { output } from 'zod'
+import { addressRequestSchema, addressResponseSchema } from "./address.schema"
 
 const customerFields = {
     name: z.string().trim().min(3, "O nome deve conter ao menos 3 caracteres").max(150),
@@ -20,35 +21,58 @@ const birthDateSchema = z.iso.date("A data deve seguir o seguinte formato: 'YYYY
         error: "A data de nascimento não pode ser uma data futura"
     })
 
+const individualCustomerFields = {
+    ...customerFields,
+    personType: z.literal('INDIVIDUAL'),
+    document: z.string("O CPF inserido precisa ser válido")
+        .refine((document) => cpf.isValid(document))
+        .transform((document) => document.replace(/\D/g, '')),
+    birthDate: birthDateSchema
+}
+
+const companyCustomerFields = {
+    ...customerFields,
+    personType: z.literal('COMPANY'),
+    document: z.string("O CNPJ inserido precisa ser válido")
+        .refine((document) => cnpj.isValid(document))
+        .transform((document) => document.replace(/\D/g, '')),
+    tradeName: z.string().trim().min(1).max(150).optional()
+}
+
+export const customerRegistrationSchema = z.discriminatedUnion('personType', [
+    z.object(individualCustomerFields).loose(),
+    z.object(companyCustomerFields).loose()
+])
+
 export const customersRequestSchema = z.discriminatedUnion('personType', [
+    z.object({ ...individualCustomerFields, address: addressRequestSchema }).loose(),
+    z.object({ ...companyCustomerFields, address: addressRequestSchema }).loose()
+])
+
+const customerResponseFields = {
+    id: z.string(),
+    name: z.string(),
+    document: z.string(),
+    email: z.email().optional(),
+    phone: z.string(),
+    address: addressResponseSchema.optional(),
+    createdAt: z.iso.datetime(),
+    updatedAt: z.iso.datetime().optional(),
+    deletedAt: z.iso.datetime().nullable()
+}
+
+export const customersResponseSchema = z.discriminatedUnion('personType', [
     z.object({
-        ...customerFields,
+        ...customerResponseFields,
         personType: z.literal('INDIVIDUAL'),
-        document: z.string("O CPF inserido precisa ser válido")
-            .refine((document) => cpf.isValid(document))
-            .transform((document) => document.replace(/\D/g, '')),
         birthDate: birthDateSchema
     }),
     z.object({
-        ...customerFields,
+        ...customerResponseFields,
         personType: z.literal('COMPANY'),
-        document: z.string("O CNPJ inserido precisa ser válido")
-            .refine((document) => cnpj.isValid(document))
-            .transform((document) => document.replace(/\D/g, '')),
-        tradeName: z.string().trim().min(1).max(150).optional()
+        tradeName: z.string().optional()
     })
 ])
 
-export const customersResponseSchema = z.object({
-    id: z.string(),
-    personType: z.enum(['INDIVIDUAL', 'COMPANY']),
-    document: z.string(),
-    name: z.string(),
-    tradeName: z.string().nullable(),
-    birthDate: z.string().nullable(),
-    email: z.string().nullable(),
-    phone: z.string()
-})
-
-export type CustomerRegistration = output<typeof customersRequestSchema>
+export type CustomerRegistration = output<typeof customerRegistrationSchema>
 export type CustomerResponse = output<typeof customersResponseSchema>
