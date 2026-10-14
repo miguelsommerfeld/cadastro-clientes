@@ -1,5 +1,8 @@
 import { randomUUID } from 'node:crypto';
-import type { CustomerRegistration } from '@packages/contracts/customer.schema'
+import type {
+    CustomerRegistration,
+    CustomerUpdateData
+} from '@packages/contracts/customer.schema'
 import { Temporal } from 'temporal-polyfill';
 import type { Models } from '../../prisma/contract';
 import { Model } from './Model'
@@ -42,6 +45,52 @@ export class CustomerModel extends Model {
         return {
             customer: savedCustomer,
             address
+        }
+    }
+
+    public async updateCustomer(id: string, customerData: CustomerUpdateData): Promise<void>
+    {
+        const updates: Partial<Pick<
+            Models.public_Customers,
+            'document' | 'name' | 'tradeName' | 'birthDate' | 'email' | 'phone'
+        >> = {};
+
+        if (customerData.document !== undefined) {
+            updates.document = this.toVarchar(customerData.document, 14);
+        }
+        if (customerData.name !== undefined) {
+            updates.name = this.toVarchar(customerData.name, 150);
+        }
+        if (customerData.tradeName !== undefined) {
+            updates.tradeName = customerData.tradeName === null
+                ? null
+                : this.toVarchar(customerData.tradeName, 150);
+        }
+        if (customerData.birthDate !== undefined) {
+            updates.birthDate = customerData.birthDate === null
+                ? null
+                : Temporal.PlainDate.from(customerData.birthDate);
+        }
+        if (customerData.email !== undefined) {
+            updates.email = customerData.email === null
+                ? null
+                : this.toVarchar(customerData.email, 254);
+        }
+        if (customerData.phone !== undefined) {
+            updates.phone = this.toVarchar(customerData.phone, 11);
+        }
+
+        if (Object.keys(updates).length > 0) {
+            await this.db.orm.public.Customers
+                .where({ id })
+                .update({
+                    ...updates,
+                    updatedAt: Temporal.Now.instant()
+                });
+        }
+
+        if (customerData.address !== undefined) {
+            await this.addressModel.updateAddress(id, customerData.address);
         }
     }
 

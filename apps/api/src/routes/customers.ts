@@ -1,13 +1,50 @@
 import { FastifyPluginAsyncZod } from '@fastify/type-provider-zod';
 import {
     customersRequestSchema,
-    customersResponseSchema
+    customersResponseSchema,
+    customerUpdateSchema
 } from '@packages/contracts/customer.schema';
 import { documentValidation } from '@packages/contracts/document.schema'
 import { stateValidator } from '@/helpers/state.validator';
 import z from 'zod';
 
 const customersRoutes: FastifyPluginAsyncZod = async function (server) {
+    // Get all customers or get a customer by its id
+    server.get('/customers', {
+        schema: {
+            querystring: z.object({
+                id: z.string().optional()
+            }),
+            response: {
+                200: z.union([
+                    customersResponseSchema,
+                    customersResponseSchema.array()
+                ]),
+                404: z.object({
+                    message: z.string()
+                })
+            }
+        },
+        handler: async function (req, res) {
+            const id = req.query.id;
+
+            if (id) {
+                const customer = await this.customerController.getCustomer(id);
+
+                if (customer === null) {
+                    return res.status(404).send({ message: "Cliente não encontrado." });
+                }
+
+                return res.status(200).send(customer);
+            }
+
+            const customers = await this.customerController.getAllCustomers();
+
+            return res.status(200).send(customers);
+        }
+    });
+
+    // Register customer
     server.post('/customers', {
         schema: {
             body: customersRequestSchema,
@@ -61,37 +98,33 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server) {
         }
     });
 
-    server.get('/customers', {
+    server.patch('/customers', {
         schema: {
             querystring: z.object({
-                id: z.string().optional()
+                id: z.string()
             }),
+            body: customerUpdateSchema,
             response: {
-                200: z.union([
-                    customersResponseSchema,
-                    customersResponseSchema.array()
-                ]),
+                200: z.void(),
                 404: z.object({
+                    status: z.literal(404),
                     message: z.string()
                 })
             }
         },
         handler: async function (req, res) {
             const id = req.query.id;
+            const customer = await this.customerController.getCustomer(id);
 
-            if (id) {
-                const customer = await this.customerController.getCustomer(id);
-
-                if (customer === null) {
-                    return res.status(404).send({ message: "Cliente não encontrado." });
-                }
-
-                return res.status(200).send(customer);
+            if (customer === null) {
+                return res.status(404).send({
+                    status: 404,
+                    message: "Usuário não encontrado"
+                });
             }
 
-            const customers = await this.customerController.getAllCustomers();
-
-            return res.status(200).send(customers);
+            await this.customerController.updateCustomer(id, req.body);
+            return res.status(200).send();
         }
     });
 }

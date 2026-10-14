@@ -1,6 +1,6 @@
 import { CustomerModel } from "@/models/CustomerModel";
 import { AddressRequestSchema } from "@packages/contracts/address.schema";
-import type { CustomerRegistration } from "@packages/contracts/customer.schema";
+import type { CustomerRegistration, CustomerUpdateData } from "@packages/contracts/customer.schema";
 
 export class CustomerRepository
 {
@@ -14,6 +14,11 @@ export class CustomerRepository
     public registerCustomer(customerData: CustomerRegistration, addressData: AddressRequestSchema)
     {
         return this.model.registerCustomer(customerData, addressData);
+    }
+
+    public async updateCustomer(id: string, customerData: CustomerUpdateData)
+    {
+        this.model.updateCustomer(id, customerData);
     }
 
     public isDocumentUnique(customerDocument: string): Promise<boolean>

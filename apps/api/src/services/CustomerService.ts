@@ -2,7 +2,8 @@ import { CustomerRepository } from "@/repositories/CustomerRepository";
 import type { AddressRequestSchema } from "@packages/contracts/address.schema";
 import type {
     CustomerRegistration,
-    CustomerResponse
+    CustomerResponse,
+    CustomerUpdateData
 } from "@packages/contracts/customer.schema";
 import type { DocumentValidation } from '@packages/contracts/document.schema'
 import { cnpj, cpf } from 'cpf-cnpj-validator'
@@ -21,6 +22,11 @@ export class CustomerService
         const customer = await this.repository.registerCustomer(customerData, addressData);
 
         return this.toCustomerResponse(customer);
+    }
+
+    public async updateCustomer(id: string, customerData: CustomerUpdateData)
+    {
+        return await this.repository.updateCustomer(id, customerData);
     }
 
     public async isDocumentUnique(customerDocument: string): Promise<DocumentValidation>

@@ -23,5 +23,10 @@ export const addressResponseSchema = z.object({
     state: z.string()
 })
 
+export const addressUpdateSchema = addressRequestSchema
+    .pick({ number: true })
+    .partial()
+
 export type AddressRequestSchema = output<typeof addressRequestSchema>
 export type AddressResponseSchema = output<typeof addressResponseSchema>
+export type AddressUpdateData = output<typeof addressUpdateSchema>

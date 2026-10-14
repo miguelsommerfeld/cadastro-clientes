@@ -2,7 +2,8 @@ import { CustomerService } from "@/services/CustomerService";
 import { AddressRequestSchema } from "@packages/contracts/address.schema";
 import type {
     CustomerRegistration,
-    CustomerResponse
+    CustomerResponse,
+    CustomerUpdateData
 } from "@packages/contracts/customer.schema";
 import type { DocumentValidation } from '@packages/contracts/document.schema'
 
@@ -18,6 +19,11 @@ export class CustomerController
     public registerCustomer(customerData: CustomerRegistration, addressData: AddressRequestSchema): Promise<CustomerResponse>
     {
         return this.service.registerCustomer(customerData, addressData);
+    }
+
+    public async updateCustomer(id: string, customerData: CustomerUpdateData)
+    {
+        return await this.service.updateCustomer(id, customerData);
     }
 
     public isDocumentUnique(customerDocument: string): Promise<DocumentValidation>

@@ -13,7 +13,7 @@ server.setSerializerCompiler(serializerCompiler)
 // Registering dependencies and routes
 server.register(dependencies)
 server.register(healthcheck)
-server.register(customersRoutes)
+server.register(customersRoutes, { prefix: '/api/v1/' })
 
 server.listen({ port: 3333, host: '0.0.0.0'}, (err: any, address: any) => {
   if (err) {
