@@ -12,6 +12,7 @@ Aplicação para cadastro e gerenciamento de clientes pessoa física e pessoa ju
 - [Pré-requisitos](#pré-requisitos)
 - [Configuração e inicialização](#configuração-e-inicialização)
 - [URLs locais](#urls-locais)
+- [Front-end](#front-end)
 - [API](#api)
 - [Modelos e validações](#modelos-e-validações)
 - [Comandos úteis](#comandos-úteis)
@@ -19,12 +20,23 @@ Aplicação para cadastro e gerenciamento de clientes pessoa física e pessoa ju
 ## Funcionalidades
 
 - Cadastro de clientes pessoa física (CPF) e pessoa jurídica (CNPJ).
+- Cadastro em wizard de quatro etapas, com revisão final, máscaras e preenchimento do endereço pelo CEP.
 - Cadastro de endereço associado ao cliente.
+- Edição de cliente, listagem e lixeira em rotas próprias, com layout adaptado a celular e desktop.
 - Consulta de clientes ativos e consulta individual por ID.
 - Atualização parcial dos dados de um cliente.
 - Remoção lógica, listagem de clientes removidos e restauração.
 - Exclusão permanente de clientes removidos.
 - Verificação de saúde da API e documentação interativa via Swagger.
+
+As telas ficam disponíveis em:
+
+- `/` — clientes.
+- `/clientes/novo` — cadastro em quatro etapas.
+- `/clientes/:id/editar` — edição.
+- `/lixeira` — clientes removidos.
+
+Caminhos desconhecidos exibem uma página 404.
 
 ## Stack
 
@@ -102,7 +114,65 @@ O script `start.sh` verifica os pré-requisitos antes de iniciar os serviços. N
 | Swagger UI | [`http://localhost:3333/docs`](http://localhost:3333/docs) |
 | Health check | [`http://localhost:3333/health`](http://localhost:3333/health) |
 
-> A interface web está no projeto, mas ainda exibe a tela inicial padrão do template React/Vite. O gerenciamento de clientes está disponível pela API.
+## Front-end
+
+A interface foi desenvolvida em React e TypeScript e se adapta a telas grandes e pequenas. No desktop, a navegação fica em uma barra lateral; em dispositivos móveis, ela passa para a parte inferior da tela. O painel concentra o acesso aos clientes ativos e à lixeira, com estados de carregamento, lista vazia, falha de conexão e resultados de busca.
+
+### Telas e recursos
+
+| Tela | Endereço | O que você pode fazer |
+| --- | --- | --- |
+| Clientes | `/` | Consultar a quantidade de registros, buscar por nome, e-mail ou documento, ordenar e navegar pela lista paginada. Cada cadastro pode ser editado ou movido para a lixeira. |
+| Novo cliente | `/clientes/novo` | Cadastrar pessoa física ou jurídica em quatro etapas: identificação, contato, endereço e revisão dos dados. O preenchimento do endereço pode buscar os dados pelo CEP. |
+| Editar cliente | `/clientes/:id/editar` | Atualizar os dados permitidos de um cadastro existente. O tipo de pessoa e o documento são preservados. |
+| Lixeira | `/lixeira` | Consultar clientes removidos, restaurá-los ou excluí-los definitivamente. As ações de remoção pedem confirmação. |
+
+O cadastro valida os campos em cada etapa e apresenta os erros junto aos campos correspondentes. Antes de concluir, a etapa de revisão permite conferir e voltar para corrigir os dados. Os formulários também oferecem navegação por teclado, rótulos associados aos campos e mensagens de estado para tecnologias assistivas.
+
+### Capturas de tela
+
+As imagens abaixo mostram o estado da interface no momento da captura; os registros exibidos podem variar conforme os dados do banco.
+
+**Painel de clientes**
+
+![Painel de clientes com busca e estado inicial sem cadastros](./docs/screenshots/clientes.png)
+
+**Formulário de cadastro**
+
+![Primeira etapa do formulário para cadastrar um novo cliente](./docs/screenshots/cadastro.png)
+
+**Lixeira**
+
+![Tela da lixeira de clientes sem registros removidos](./docs/screenshots/lixeira.png)
+
+### Executar o front-end em desenvolvimento
+
+O Vite carrega as configurações do `.env` localizado na raiz do monorepo. Instale as dependências a partir dessa raiz, se ainda não tiver feito isso, e inicie o servidor web:
+
+```bash
+npm install
+cd apps/web
+npm run dev
+```
+
+Com a API em execução, abra a URL local informada pelo Vite (normalmente [`http://localhost:5173`](http://localhost:5173)). O proxy de desenvolvimento encaminha as chamadas para a API conforme `VITE_API_PROXY_TARGET`.
+
+### Configuração
+
+Defina no `.env` da raiz as variáveis que forem necessárias:
+
+| Variável | Uso |
+| --- | --- |
+| `VITE_API_BASE_URL` | Prefixo base da API usado pelo navegador, por exemplo `/api/v1`. |
+| `VITE_API_CUSTOMERS_PATH` | Rota de clientes ativos. |
+| `VITE_API_DELETED_CUSTOMERS_PATH` | Rota de clientes removidos. |
+| `VITE_API_CUSTOMER_RESTORE_PATH` | Rota para restaurar um cliente. |
+| `VITE_API_CUSTOMER_PERMANENT_DELETE_PATH` | Rota para excluir permanentemente um cliente. |
+| `VITE_API_PROXY_TARGET` | Destino do proxy do Vite durante o desenvolvimento local. |
+| `API_PROXY_PREFIX` | Prefixo de URL encaminhado pelo Nginx no contêiner web. |
+| `API_PROXY_TARGET` | Serviço e porta da API usados pelo Nginx no contêiner web. |
+
+Os valores `VITE_*` são incorporados ao código entregue ao navegador durante a execução do Vite ou a construção da imagem Docker; não coloque segredos nessas variáveis.
 
 ## API
 
@@ -220,4 +290,3 @@ Os pacotes também têm comandos próprios:
 | `apps/api` | `npm start` | Inicia a API compilada. |
 | `apps/web` | `npm run dev` | Inicia o servidor de desenvolvimento Vite. |
 | `apps/web` | `npm run build` | Verifica os tipos e gera a versão de produção. |
-| `apps/web` | `npm run lint` | Executa o ESLint. |

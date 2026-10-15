@@ -29,7 +29,7 @@ const individualCustomerFields = {
     ...customerFields,
     personType: z.literal('INDIVIDUAL'),
     document: z.string("O CPF inserido precisa ser válido")
-        .refine((document) => cpf.isValid(document))
+        .refine((document) => cpf.isValid(document), { error: "CPF inválido" })
         .transform((document) => document.replace(/\D/g, '')),
     birthDate: birthDateSchema
 }
@@ -38,13 +38,35 @@ const companyCustomerFields = {
     ...customerFields,
     personType: z.literal('COMPANY'),
     document: z.string("O CNPJ inserido precisa ser válido")
-        .refine((document) => cnpj.isValid(document))
+        .refine((document) => cnpj.isValid(document), { error: "CNPJ inválido" })
         .transform((document) => document.replace(/\D/g, '')),
     tradeName: z.string().trim().min(1).max(150).optional()
 }
 
+export const customerIdentitySchema = z.discriminatedUnion('personType', [
+    z.object({
+      personType: z.literal('INDIVIDUAL'),
+      name: customerFields.name,
+      document: individualCustomerFields.document,
+      birthDate: birthDateSchema
+    }),
+    z.object({
+      personType: z.literal('COMPANY'),
+      name: customerFields.name,
+      document: companyCustomerFields.document,
+      tradeName: companyCustomerFields.tradeName
+    })
+])
+
+export const customerContactSchema = z.object({
+    email: customerFields.email,
+    phone: customerFields.phone
+})
+
 const customerDocumentUpdateSchema = z.string("O documento inserido precisa ser válido")
-    .refine((document) => cpf.isValid(document) || cnpj.isValid(document))
+    .refine((document) => cpf.isValid(document) || cnpj.isValid(document), {
+        error: "CPF ou CNPJ inválido"
+    })
     .transform((document) => document.replace(/\D/g, ''))
 
 export const customerRegistrationSchema = z.discriminatedUnion('personType', [

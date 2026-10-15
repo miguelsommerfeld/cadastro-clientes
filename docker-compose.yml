@@ -50,7 +50,16 @@ services:
     build:
         context: ./
         dockerfile: apps/web/Dockerfile
+        args:
+            VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api/v1}
+            VITE_API_CUSTOMERS_PATH: ${VITE_API_CUSTOMERS_PATH:-customers}
+            VITE_API_DELETED_CUSTOMERS_PATH: ${VITE_API_DELETED_CUSTOMERS_PATH:-customers/deleted}
+            VITE_API_CUSTOMER_RESTORE_PATH: ${VITE_API_CUSTOMER_RESTORE_PATH:-customers/restore}
+            VITE_API_CUSTOMER_PERMANENT_DELETE_PATH: ${VITE_API_CUSTOMER_PERMANENT_DELETE_PATH:-customers/permanent}
     restart: always
+    environment:
+        API_PROXY_PREFIX: ${API_PROXY_PREFIX:-/api}
+        API_PROXY_TARGET: ${API_PROXY_TARGET:-api:3333}
     ports:
         - "127.0.0.1:8080:8080"
     volumes:

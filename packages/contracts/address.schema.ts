@@ -5,11 +5,11 @@ export const addressRequestSchema = z.object({
         .trim()
         .regex(/^(?:[0-9]{8}|[0-9]{5}-[0-9]{3})$/, "O CEP deve conter 8 dígitos")
         .transform((zipCode) => zipCode.replace("-", "")),
-    street: z.string().max(150),
+    street: z.string().trim().min(1, "O logradouro é obrigatório").max(150),
     number: z.string().max(10).nullable(),
-    complement: z.string().max(100),
-    district: z.string().max(100),
-    city: z.string().max(100),
+    complement: z.string().trim().min(1, "O complemento é obrigatório").max(100),
+    district: z.string().trim().min(1, "O bairro é obrigatório").max(100),
+    city: z.string().trim().min(1, "A cidade é obrigatória").max(100),
     state: z.string().min(2).max(2)
 }).loose()
 
