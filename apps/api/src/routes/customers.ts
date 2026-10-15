@@ -1,4 +1,5 @@
 import { FastifyPluginAsyncZod } from '@fastify/type-provider-zod';
+import { FastifyTypedInstance } from '../../config/dependencies';
 import {
     customersRequestSchema,
     customersResponseSchema,
@@ -8,7 +9,7 @@ import { documentValidation } from '@packages/contracts/document.schema'
 import { stateValidator } from '@/helpers/state.validator';
 import z from 'zod';
 
-const customersRoutes: FastifyPluginAsyncZod = async function (server) {
+const customersRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedInstance) {
     // Get all customers or get a customer by its id
     server.get('/customers', {
         schema: {
@@ -44,6 +45,7 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server) {
         }
     });
 
+    // Get all deleted customers
     server.get('/customers/deleted', {
         schema: {
             response: {
@@ -111,6 +113,7 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server) {
         }
     });
 
+    // Restore a deleted customer
     server.post('/customers/restore', {
         schema: {
             querystring: z.object({
@@ -151,6 +154,7 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server) {
         }
     });
 
+    // Update a customer
     server.patch('/customers', {
         schema: {
             querystring: z.object({
@@ -192,6 +196,7 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server) {
         }
     });
 
+    // Send a customer to the bin
     server.delete('/customers', {
         schema: {
             querystring: z.object({
@@ -228,6 +233,7 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server) {
         }
     });
 
+    // Delete permanently a customer
     server.delete('/customers/permanent', {
         schema: {
             querystring: z.object({
