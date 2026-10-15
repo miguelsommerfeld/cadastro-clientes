@@ -44,6 +44,19 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server) {
         }
     });
 
+    server.get('/customers/deleted', {
+        schema: {
+            response: {
+                200: customersResponseSchema.array()
+            }
+        },
+        handler: async function (req, res) {
+            const customers = await this.customerController.getAllDeletedCustomers();
+
+            return res.status(200).send(customers);
+        }
+    });
+
     // Register customer
     server.post('/customers', {
         schema: {
@@ -98,14 +111,58 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server) {
         }
     });
 
+    server.post('/customers/restore', {
+        schema: {
+            querystring: z.object({
+                id: z.string().optional()
+            }),
+            response: {
+                200: z.void(),
+                404: z.object({
+                    status: z.literal(404),
+                    message: z.string()
+                }),
+                409: z.object({
+                    status: z.literal(404),
+                    message: z.string()
+                })
+            }
+        },
+        handler: async function (req, res) {
+            if (req.query.id === undefined) {
+                return res.status(404).send({
+                    status: 404,
+                    message: "Insira o ID do usuário que deseja restaurar"
+                });
+            }
+
+            const id = req.query.id;
+            const customer = await this.customerController.getDeletedCustomer(id);
+
+            if (customer === null) {
+                return res.status(404).send({
+                    status: 404,
+                    message: "Usuário não encontrado na lixeira"
+                });
+            }
+
+            await this.customerController.restoreCustomer(id);
+            return res.status(200).send();
+        }
+    });
+
     server.patch('/customers', {
         schema: {
             querystring: z.object({
-                id: z.string()
+                id: z.string().optional()
             }),
             body: customerUpdateSchema,
             response: {
                 200: z.void(),
+                400: z.object({
+                    status: z.literal(400),
+                    message: z.string()
+                }),
                 404: z.object({
                     status: z.literal(404),
                     message: z.string()
@@ -113,6 +170,13 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server) {
             }
         },
         handler: async function (req, res) {
+            if (req.query.id === undefined) {
+                return res.status(400).send({
+                    status: 400,
+                    message: "Insira o ID do usuário que deseja atualizar"
+                });
+            }
+            
             const id = req.query.id;
             const customer = await this.customerController.getCustomer(id);
 
@@ -125,6 +189,78 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server) {
 
             await this.customerController.updateCustomer(id, req.body);
             return res.status(200).send();
+        }
+    });
+
+    server.delete('/customers', {
+        schema: {
+            querystring: z.object({
+                id: z.string().optional()
+            }),
+            response: {
+                204: z.void(),
+                404: z.object({
+                    status: z.literal(404),
+                    message: z.string()
+                })
+            }
+        },
+        handler: async function (req, res) {
+            if (req.query.id === undefined) {
+                return res.status(404).send({
+                    status: 404,
+                    message: "Insira o ID do usuário que deseja deletar"
+                });
+            }
+
+            const id = req.query.id;
+            const customer = await this.customerController.getCustomer(id);
+
+            if (customer === null) {
+                return res.status(404).send({
+                    status: 404,
+                    message: "Usuário não encontrado"
+                });
+            }
+
+            await this.customerController.deleteCustomer(id);
+            return res.status(204).send();
+        }
+    });
+
+    server.delete('/customers/permanent', {
+        schema: {
+            querystring: z.object({
+                id: z.string().optional()
+            }),
+            response: {
+                204: z.void(),
+                404: z.object({
+                    status: z.literal(404),
+                    message: z.string()
+                })
+            }
+        },
+        handler: async function (req, res) {
+            if (req.query.id === undefined) {
+                return res.status(404).send({
+                    status: 404,
+                    message: "Insira o ID do usuário que deseja deletar"
+                });
+            }
+
+            const id = req.query.id;
+            const customer = await this.customerController.getDeletedCustomer(id);
+
+            if (!customer) {
+                return res.status(404).send({
+                    status: 404,
+                    message: "Usuário não encontrado"
+                });
+            }
+
+            await this.customerController.permanentDeleteCustomer(id);
+            return res.status(204).send();
         }
     });
 }

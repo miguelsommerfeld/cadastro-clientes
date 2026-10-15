@@ -26,6 +26,18 @@ export class CustomerController
         return await this.service.updateCustomer(id, customerData);
     }
 
+    public async deleteCustomer(customerId: string) {
+        await this.service.deleteCustomer(customerId);
+    }
+
+    public async restoreCustomer(customerId: string) {
+        await this.service.restoreCustomer(customerId);
+    }
+
+    public async permanentDeleteCustomer(customerId: string) {
+        await this.service.permanentDeleteCustomer(customerId);
+    }
+
     public isDocumentUnique(customerDocument: string): Promise<DocumentValidation>
     {
         return this.service.isDocumentUnique(customerDocument);
@@ -43,5 +55,14 @@ export class CustomerController
     public getAllCustomers(): Promise<CustomerResponse[]>
     {
         return this.service.getAllCustomers();
+    }
+
+    public async getDeletedCustomer(customerId: string)
+    {
+        return await this.service.getDeletedCustomer(customerId);
+    }
+
+    public getAllDeletedCustomers(): Promise<CustomerResponse[]> {
+        return this.service.getAllDeletedCustomers();
     }
 }

@@ -45,6 +45,11 @@ export class AddressModel extends Model
             });
     }
 
+    public deleteAddress(customerId: string)
+    {
+        return this.db.orm.public.Addresses.where({ customerId }).deleteAll();
+    }
+
     public getAllAddresses()
     {
         return this.db.orm.public.Addresses.all();
