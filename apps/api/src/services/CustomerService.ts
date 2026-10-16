@@ -114,7 +114,7 @@ export class CustomerService
 
         if (isAlreadyRegistered) {
             return {
-                status: 400,
+                status: 409,
                 message: "O e-mail digitado já está cadastrado"
             };
         }

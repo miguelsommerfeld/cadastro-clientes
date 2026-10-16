@@ -18,7 +18,7 @@ export class CustomerRepository
 
     public async updateCustomer(id: string, customerData: CustomerUpdateData)
     {
-        this.model.updateCustomer(id, customerData);
+        await this.model.updateCustomer(id, customerData);
     }
 
     public async deleteCustomer(customerId: string)

@@ -7,7 +7,7 @@ import {
 } from '@packages/contracts/customer.schema';
 import { documentValidation } from '@packages/contracts/document.schema'
 import { stateValidator } from '@/helpers/state.validator';
-import z from 'zod';
+import z, { string } from 'zod';
 
 const customersRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedInstance) {
     // Get all customers or get a customer by its id
@@ -76,7 +76,6 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server: FastifyTy
         handler: async function (req, res) {
             // Validation
             const isDocumentUnique = await this.customerController.isDocumentUnique(req.body.document);
-            const isEmailRegistered = await this.customerController.isEmailRegistered(req.body.email);
 
             if (isDocumentUnique.status === 409 || isDocumentUnique.status === 400) {
                 return res.status(isDocumentUnique.status).send({
@@ -84,6 +83,8 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server: FastifyTy
                     message: isDocumentUnique.message
                 });
             }
+
+            const isEmailRegistered = await this.customerController.isEmailRegistered(req.body.email);
 
             if (isEmailRegistered.status === 409) {
                 return res.status(409).send({
@@ -189,6 +190,18 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server: FastifyTy
                     status: 404,
                     message: "Usuário não encontrado"
                 });
+            }
+
+            const userEmail = req.body.email;
+            if (customer.email !== userEmail && typeof userEmail === 'string') {
+                const isEmailAlreadyRegistered = await this.customerController.isEmailRegistered(userEmail);
+
+                if (isEmailAlreadyRegistered.status !== 200 && isEmailAlreadyRegistered.message !== null) {
+                    return res.status(400).send({
+                        status: 400,
+                        message: isEmailAlreadyRegistered.message
+                    });
+                }
             }
 
             await this.customerController.updateCustomer(id, req.body);
