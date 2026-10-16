@@ -27,6 +27,7 @@ services:
     restart: always
     environment:
         DB_URL: ${DB_URL}
+        CORS_ORIGIN: ${CORS_ORIGIN}
     ports:
         - "127.0.0.1:3333:3333"
     volumes:
