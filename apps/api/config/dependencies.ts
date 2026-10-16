@@ -4,6 +4,8 @@ import { CustomerModel } from '@/models/CustomerModel';
 import { CustomerRepository } from '@/repositories/CustomerRepository';
 import { CustomerService } from '@/services/CustomerService';
 import { CustomerController } from '@/controllers/CustomerController';
+import { FastifyBaseLogger, FastifyInstance, RawReplyDefaultExpression, RawRequestDefaultExpression, RawServerDefault } from 'fastify';
+import { ZodTypeProvider } from '@fastify/type-provider-zod';
 
 export default fp(async (server) => {
     // Customer Dependencies
@@ -15,3 +17,11 @@ export default fp(async (server) => {
 
     server.decorate('customerController', customerController);
 });
+
+export type FastifyTypedInstance = FastifyInstance<
+    RawServerDefault,
+    RawRequestDefaultExpression,
+    RawReplyDefaultExpression,
+    FastifyBaseLogger,
+    ZodTypeProvider
+>
