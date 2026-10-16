@@ -1,14 +1,21 @@
 import Fastify from 'fastify'
-import { serializerCompiler } from '@fastify/type-provider-zod';
-import healthCheck from './routes/health_check.ts'
+import { serializerCompiler, validatorCompiler, ZodTypeProvider } from '@fastify/type-provider-zod'
+import dependencies from '../config/dependencies.ts'
+import healthcheck from './routes/healthcheck.ts'
+import customersRoutes from './routes/customers.ts'
 
-const server = Fastify({logger: true})
+const server = Fastify({ logger: true }).withTypeProvider<ZodTypeProvider>()
 
-server.setSerializerCompiler(serializerCompiler);
+// Type Settings
+server.setValidatorCompiler(validatorCompiler)
+server.setSerializerCompiler(serializerCompiler)
 
-server.register(healthCheck)
+// Registering dependencies and routes
+server.register(dependencies)
+server.register(healthcheck)
+server.register(customersRoutes)
 
-server.listen({ port: 3000, host: '127.0.0.1' }, function (err: any, address: any) {
+server.listen({ port: 3333, host: '0.0.0.0'}, (err: any, address: any) => {
   if (err) {
     server.log.error(err)
     process.exit(1)
