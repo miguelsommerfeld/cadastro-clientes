@@ -1,7 +1,11 @@
 import { z } from "@victorfernandesraton/zod-phonenumber"
 import { cnpj, cpf } from 'cpf-cnpj-validator'
 import type { output } from 'zod'
-import { addressRequestSchema, addressResponseSchema } from "./address.schema"
+import {
+    addressRequestSchema,
+    addressResponseSchema,
+    addressUpdateSchema
+} from "./address.schema"
 
 const customerFields = {
     name: z.string().trim().min(3, "O nome deve conter ao menos 3 caracteres").max(150),
@@ -39,6 +43,10 @@ const companyCustomerFields = {
     tradeName: z.string().trim().min(1).max(150).optional()
 }
 
+const customerDocumentUpdateSchema = z.string("O documento inserido precisa ser válido")
+    .refine((document) => cpf.isValid(document) || cnpj.isValid(document))
+    .transform((document) => document.replace(/\D/g, ''))
+
 export const customerRegistrationSchema = z.discriminatedUnion('personType', [
     z.object(individualCustomerFields).loose(),
     z.object(companyCustomerFields).loose()
@@ -74,5 +82,15 @@ export const customersResponseSchema = z.discriminatedUnion('personType', [
     })
 ])
 
+export const customerUpdateSchema = z.object({
+    ...customerFields,
+    document: customerDocumentUpdateSchema,
+    tradeName: z.string().trim().min(1).max(150).nullable(),
+    birthDate: birthDateSchema.nullable(),
+    email: customerFields.email.nullable(),
+    address: addressUpdateSchema
+}).partial()
+
 export type CustomerRegistration = output<typeof customerRegistrationSchema>
 export type CustomerResponse = output<typeof customersResponseSchema>
+export type CustomerUpdateData = output<typeof customerUpdateSchema>

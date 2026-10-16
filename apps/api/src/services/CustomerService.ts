@@ -2,7 +2,8 @@ import { CustomerRepository } from "@/repositories/CustomerRepository";
 import type { AddressRequestSchema } from "@packages/contracts/address.schema";
 import type {
     CustomerRegistration,
-    CustomerResponse
+    CustomerResponse,
+    CustomerUpdateData
 } from "@packages/contracts/customer.schema";
 import type { DocumentValidation } from '@packages/contracts/document.schema'
 import { cnpj, cpf } from 'cpf-cnpj-validator'
@@ -23,6 +24,23 @@ export class CustomerService
         return this.toCustomerResponse(customer);
     }
 
+    public async updateCustomer(id: string, customerData: CustomerUpdateData)
+    {
+        return await this.repository.updateCustomer(id, customerData);
+    }
+
+    public async deleteCustomer(customerId: string) {
+        await this.repository.deleteCustomer(customerId);
+    }
+
+    public async restoreCustomer(customerId: string) {
+        await this.repository.restoreCustomer(customerId);
+    }
+
+    public async permanentDeleteCustomer(customerId: string) {
+        return await this.repository.permanentDeleteCustomer(customerId);
+    }
+
     public async isDocumentUnique(customerDocument: string): Promise<DocumentValidation>
     {
         if (!this.isDocumentValid(customerDocument)) {
@@ -32,10 +50,29 @@ export class CustomerService
             };
         }
 
+        const isDocumentInTheBin = await this.isDocumentInTheBin(customerDocument);
+
+        if (isDocumentInTheBin.status === 409) return isDocumentInTheBin;
+
         if (!await this.repository.isDocumentUnique(customerDocument)) {
             return {
                 status: 400,
                 message: "O documento inserido já foi registrado"
+            };
+        }
+
+        return {
+            status: 200,
+            message: null
+        }
+    }
+
+    public async isDocumentInTheBin(customerDocument: string): Promise<DocumentValidation>
+    {
+        if (await this.repository.isDocumentInTheBin(customerDocument)) {
+            return {
+                status: 409,
+                message: "O documento inserido já foi registrado por um cliente que está na lixeira"
             };
         }
 
@@ -53,6 +90,16 @@ export class CustomerService
 
     public async getAllCustomers(): Promise<CustomerResponse[]> {
         const customers = await this.repository.getAllCustomers();
+
+        return customers.map((customer) => this.toCustomerResponse(customer));
+    }
+
+    public async getDeletedCustomer(customerId: string) {
+        return await this.repository.getDeletedCustomer(customerId);
+    }
+
+    public async getAllDeletedCustomers(): Promise<CustomerResponse[]> {
+        const customers = await this.repository.getAllDeletedCustomers();
 
         return customers.map((customer) => this.toCustomerResponse(customer));
     }

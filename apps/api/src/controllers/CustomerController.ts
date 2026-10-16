@@ -2,7 +2,8 @@ import { CustomerService } from "@/services/CustomerService";
 import { AddressRequestSchema } from "@packages/contracts/address.schema";
 import type {
     CustomerRegistration,
-    CustomerResponse
+    CustomerResponse,
+    CustomerUpdateData
 } from "@packages/contracts/customer.schema";
 import type { DocumentValidation } from '@packages/contracts/document.schema'
 
@@ -18,6 +19,23 @@ export class CustomerController
     public registerCustomer(customerData: CustomerRegistration, addressData: AddressRequestSchema): Promise<CustomerResponse>
     {
         return this.service.registerCustomer(customerData, addressData);
+    }
+
+    public async updateCustomer(id: string, customerData: CustomerUpdateData)
+    {
+        return await this.service.updateCustomer(id, customerData);
+    }
+
+    public async deleteCustomer(customerId: string) {
+        await this.service.deleteCustomer(customerId);
+    }
+
+    public async restoreCustomer(customerId: string) {
+        await this.service.restoreCustomer(customerId);
+    }
+
+    public async permanentDeleteCustomer(customerId: string) {
+        await this.service.permanentDeleteCustomer(customerId);
     }
 
     public isDocumentUnique(customerDocument: string): Promise<DocumentValidation>
@@ -37,5 +55,14 @@ export class CustomerController
     public getAllCustomers(): Promise<CustomerResponse[]>
     {
         return this.service.getAllCustomers();
+    }
+
+    public async getDeletedCustomer(customerId: string)
+    {
+        return await this.service.getDeletedCustomer(customerId);
+    }
+
+    public getAllDeletedCustomers(): Promise<CustomerResponse[]> {
+        return this.service.getAllDeletedCustomers();
     }
 }

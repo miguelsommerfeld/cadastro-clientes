@@ -1,4 +1,7 @@
-import type { AddressRequestSchema } from "@packages/contracts/address.schema";
+import type {
+    AddressRequestSchema,
+    AddressUpdateData
+} from "@packages/contracts/address.schema";
 import { randomUUID } from 'node:crypto'
 import type { Models } from '../../prisma/contract';
 import { Model } from './Model'
@@ -25,6 +28,26 @@ export class AddressModel extends Model
     public getAddress(customerId: string)
     {
         return this.db.orm.public.Addresses.where({ customerId }).first();
+    }
+
+    public updateAddress(customerId: string, addressData: AddressUpdateData)
+    {
+        if (addressData.number === undefined) {
+            return null;
+        }
+
+        return this.db.orm.public.Addresses
+            .where({ customerId })
+            .update({
+                number: addressData.number === null
+                    ? null
+                    : this.toVarchar(addressData.number, 10)
+            });
+    }
+
+    public deleteAddress(customerId: string)
+    {
+        return this.db.orm.public.Addresses.where({ customerId }).deleteAll();
     }
 
     public getAllAddresses()
