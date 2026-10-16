@@ -4,6 +4,7 @@ import {
     customersResponseSchema
 } from '@packages/contracts/customer.schema';
 import { documentValidation } from '@packages/contracts/document.schema'
+import { stateValidator } from '@/helpers/state.validator';
 import z from 'zod';
 
 const customersRoutes: FastifyPluginAsyncZod = async function (server) {
@@ -12,32 +13,50 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server) {
             body: customersRequestSchema,
             response: {
                 201: customersResponseSchema,
-                400: z.union([documentValidation, z.object({ message: z.string()})]),
-                409: documentValidation
+                400: z.union([documentValidation, z.object({
+                    message: z.string(),
+                    error: z.string()
+                })]),
+                409: documentValidation,
+                500: documentValidation
             }
         },
         handler: async function (req, res) {
+            // Validation
             const isDocumentUnique = await this.customerController.isDocumentUnique(req.body.document);
+            const isEmailRegistered = await this.customerController.isEmailRegistered(req.body.email);
 
-            if (isDocumentUnique.status === 409) {
+            if (isDocumentUnique.status === 409 || isDocumentUnique.status === 400) {
                 return res.status(isDocumentUnique.status).send({
                     status: isDocumentUnique.status,
                     message: isDocumentUnique.message
                 });
             }
 
-            if (isDocumentUnique.status === 400) {
-                return res.status(isDocumentUnique.status).send({
-                    status: isDocumentUnique.status,
-                    message: isDocumentUnique.message
+            if (isEmailRegistered.status === 409) {
+                return res.status(409).send({
+                    status: 409,
+                    message: isEmailRegistered.message
                 });
+            }
+
+            const stateResponse = await stateValidator(req.body.address.state);
+
+            if (stateResponse.status !== 200) {
+                return res.status(stateResponse.status).send(stateResponse);
             }
 
             try {
-                const customer = await this.customerController.registerCustomer(req.body);
-                return res.status(201).send(customer);
+                const { address, ...customerData } = req.body;
+                const response = await this.customerController.registerCustomer(customerData, address);
+
+                return res.status(201).send(response);
             } catch (err) {
-                return res.status(400).send({ message: "Dados inválidos" })
+                if (err instanceof Error) {
+                    return res.status(400).send({ message: "Dados inválidos", error: err.message })
+                }
+
+                return res.status(400).send({ message: "Dados inválidos", error: "Desconhecido." })
             }
         }
     });

@@ -21,3 +21,17 @@ model Customers {
 
     @@map("customers")
 }
+
+model Addresses {
+    id         String       @id @default(uuid()) @unique @map("id")
+    customerId String       @relation(id: Customers) @unique @map("customer_id")
+    zipCode    VarChar(8)   @map("zip_code")
+    street     VarChar(150) @map("street")
+    number     VarChar(10)? @default("S/N") @map("number")
+    complement VarChar(100) @map("complement")
+    district   VarChar(100) @map("district")
+    city       VarChar(100) @map("city")
+    state      VarChar(2)   @map("state")
+
+    @@map("addresses")
+}

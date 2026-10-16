@@ -1,4 +1,5 @@
 import { CustomerService } from "@/services/CustomerService";
+import { AddressRequestSchema } from "@packages/contracts/address.schema";
 import type {
     CustomerRegistration,
     CustomerResponse
@@ -14,14 +15,18 @@ export class CustomerController
         this.service = service;
     }
 
-    public registerCustomer(customerData: CustomerRegistration): Promise<CustomerResponse>
+    public registerCustomer(customerData: CustomerRegistration, addressData: AddressRequestSchema): Promise<CustomerResponse>
     {
-        return this.service.registerCustomer(customerData);
+        return this.service.registerCustomer(customerData, addressData);
     }
 
     public isDocumentUnique(customerDocument: string): Promise<DocumentValidation>
     {
         return this.service.isDocumentUnique(customerDocument);
+    }
+
+    public isEmailRegistered(userEmail: string): Promise<DocumentValidation> {
+        return this.service.isEmailRegistered(userEmail);
     }
 
     public async getCustomer(id: string)
