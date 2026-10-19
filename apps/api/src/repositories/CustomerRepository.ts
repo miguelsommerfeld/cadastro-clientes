@@ -1,3 +1,4 @@
+import { ApplicationError } from "@/errors/application.error";
 import { CustomerModel } from "@/models/CustomerModel";
 import { AddressRequestSchema } from "@packages/contracts/address.schema";
 import type { CustomerRegistration, CustomerUpdateData } from "@packages/contracts/customer.schema";
@@ -23,12 +24,12 @@ export class CustomerRepository
 
     public async deleteCustomer(customerId: string)
     {
-        await this.model.deleteCustomer(customerId);
+        return this.model.deleteCustomer(customerId);
     }
 
     public async restoreCustomer(customerId: string)
     {
-        await this.model.restoreCustomer(customerId);
+        return this.model.restoreCustomer(customerId);
     }
 
     public async permanentDeleteCustomer(customerId: string)
@@ -41,7 +42,7 @@ export class CustomerRepository
         return this.model.isDocumentUnique(customerDocument);
     }
 
-    public async isDocumentInTheBin(customerDocument: string): Promise<boolean>
+    public async isDocumentInTheBin(customerDocument: string): Promise<boolean | ApplicationError>
     {
         return await this.model.isDocumentInTheBin(customerDocument);
     }
@@ -51,22 +52,22 @@ export class CustomerRepository
         return await this.model.isEmailRegistered(userEmail);
     }
 
-    public async getAllCustomers()
+    public async getAllCustomers(): ReturnType<CustomerModel["getAllCustomers"]>
     {
         return this.model.getAllCustomers();
     }
 
-    public async getCustomer(id: string)
+    public async getCustomer(id: string): ReturnType<CustomerModel["getCustomer"]>
     {
         return await this.model.getCustomer(id);
     }
 
-    public async getDeletedCustomer(customerId: string)
+    public async getDeletedCustomer(customerId: string): ReturnType<CustomerModel["getDeletedCustomer"]>
     {
         return await this.model.getDeletedCustomer(customerId);
     }
 
-    public async getAllDeletedCustomers()
+    public async getAllDeletedCustomers(): ReturnType<CustomerModel["getAllDeletedCustomers"]>
     {
         return this.model.getAllDeletedCustomers();
     }

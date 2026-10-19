@@ -9,6 +9,12 @@ import type { Models } from '../../prisma/contract';
 import { Model } from './Model'
 import type { AddressRequestSchema } from '@packages/contracts/address.schema';
 import { AddressModel } from '@/models/AddressModel'
+import { ApplicationError } from '@/errors/application.error';
+
+export type CustomerWithAddress = {
+    customer: Models.public_Customers;
+    address: Awaited<ReturnType<AddressModel['getAddress']>>;
+};
 
 export class CustomerModel extends Model {
     private readonly addressModel: AddressModel;
@@ -95,28 +101,28 @@ export class CustomerModel extends Model {
         }
     }
 
-    public async deleteCustomer(customerId: string)
+    public async deleteCustomer(customerId: string): Promise<void | ApplicationError>
     {
         try {
             const now = Temporal.Now.instant();
             await this.db.orm.public.Customers.where({ id: customerId })
                                               .update({ updatedAt: now, deletedAt: now })
         } catch {
-            throw new Error(`Não foi possível adicionar o usuário de ID ${customerId} à lixeira`)
+            return new ApplicationError(503, `Não foi possível adicionar o usuário de ID ${customerId} à lixeira`)
         }
     }
 
-    public async restoreCustomer(customerId: string)
+    public async restoreCustomer(customerId: string): Promise<void | ApplicationError>
     {
         try {
             await this.db.orm.public.Customers.where({ id: customerId })
                                               .update({ deletedAt: null })
         } catch {
-            throw new Error(`Não foi possível restaurar o usuário de ID ${customerId}`)
+            return new ApplicationError(503, `Não foi possível restaurar o usuário de ID ${customerId}`)
         }
     }
 
-    public async permanentDeleteCustomer(customerId: string): Promise<boolean>
+    public async permanentDeleteCustomer(customerId: string): Promise<boolean | ApplicationError>
     {
         try {
             await this.addressModel.deleteAddress(customerId)
@@ -124,7 +130,7 @@ export class CustomerModel extends Model {
 
             return true;
         } catch {
-            throw new Error(`Não foi possível deletar o usuário de ID ${customerId}`)
+            return new ApplicationError(503, `Não foi possível deletar o usuário de ID ${customerId}`)
         }
     }
 
@@ -138,7 +144,7 @@ export class CustomerModel extends Model {
         return !customer;
     }
 
-    public async isDocumentInTheBin(customerDocument: string): Promise<boolean>
+    public async isDocumentInTheBin(customerDocument: string): Promise<boolean | ApplicationError>
     {
         try {
             const customer = await this.db.orm.public.Customers
@@ -152,7 +158,7 @@ export class CustomerModel extends Model {
 
             return true;
         } catch {
-            throw new Error(`Ocorreu um erro ao retornar o documento do usuário.`);
+            return new ApplicationError(503, `Ocorreu um erro ao retornar o documento do usuário.`)
         }
     }
 
@@ -165,7 +171,7 @@ export class CustomerModel extends Model {
         return !!response;
     }
 
-    public async getCustomer(id: string)
+    public async getCustomer(id: string): Promise<CustomerWithAddress | null | ApplicationError>
     {
         const customer = await this.db.orm.public.Customers.where({
             id,
@@ -181,7 +187,7 @@ export class CustomerModel extends Model {
         return { customer, address };
     }
 
-    public async getAllCustomers()
+    public async getAllCustomers(): Promise<CustomerWithAddress[] | ApplicationError>
     {
         const [customers, addresses] = await Promise.all([
             this.db.orm.public.Customers.where({ deletedAt: null}).all(),
@@ -195,19 +201,19 @@ export class CustomerModel extends Model {
         }));
     }
 
-    public async getDeletedCustomer(customerId: string)
+    public async getDeletedCustomer(customerId: string): Promise<Models.public_Customers | null | ApplicationError>
     {
         try {
             return await this.db.orm.public.Customers
                 .where({ id: customerId })
                 .where((customer) => customer.deletedAt.isNotNull())
-                .first()
+                .first();
         } catch {
-            throw new Error(`Ocorreu um erro ao retornar o usuário.`);
+            return new ApplicationError(503, `Ocorreu um erro ao retornar o usuário.`);
         }
     }
 
-    public async getAllDeletedCustomers()
+    public async getAllDeletedCustomers(): Promise<CustomerWithAddress[] | ApplicationError>
     {
         try {
             const [customers, addresses] = await Promise.all([
@@ -223,7 +229,7 @@ export class CustomerModel extends Model {
                 address: addressesByCustomerId.get(customer.id) ?? null
             }));
         } catch {
-            throw new Error(`Ocorreu um erro ao retornar usuários.`);
+            return new ApplicationError(503, `Ocorreu um erro ao retornar usuários.`);
         }
     }
 }

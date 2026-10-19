@@ -1,3 +1,4 @@
+import { ApplicationError } from "@/errors/application.error";
 import { CustomerRepository } from "@/repositories/CustomerRepository";
 import type { AddressRequestSchema } from "@packages/contracts/address.schema";
 import type {
@@ -7,21 +8,27 @@ import type {
 } from "@packages/contracts/customer.schema";
 import type { DocumentValidation } from '@packages/contracts/document.schema'
 import { cnpj, cpf } from 'cpf-cnpj-validator'
+import { Service, type ApplicationErrorResponse } from "./Service";
+import type { CustomerWithAddress } from "@/models/CustomerModel";
 
-export class CustomerService
+export class CustomerService extends Service
 {
     private repository: CustomerRepository;
 
     constructor(repository: CustomerRepository)
     {
+        super()
         this.repository = repository;
     }
 
-    public async registerCustomer(customerData: CustomerRegistration, addressData: AddressRequestSchema): Promise<CustomerResponse>
+    public async registerCustomer(
+        customerData: CustomerRegistration,
+        addressData: AddressRequestSchema
+    ): Promise<CustomerResponse | ApplicationErrorResponse>
     {
         const customer = await this.repository.registerCustomer(customerData, addressData);
 
-        return this.toCustomerResponse(customer);
+        return this.toApplicationErrorResponse(this.toCustomerResponse(customer));
     }
 
     public async updateCustomer(id: string, customerData: CustomerUpdateData)
@@ -30,18 +37,21 @@ export class CustomerService
     }
 
     public async deleteCustomer(customerId: string) {
-        await this.repository.deleteCustomer(customerId);
+        const result = await this.repository.deleteCustomer(customerId);
+        return this.toApplicationErrorResponse(result);
     }
 
     public async restoreCustomer(customerId: string) {
-        await this.repository.restoreCustomer(customerId);
+        const result = await this.repository.restoreCustomer(customerId);
+        return this.toApplicationErrorResponse(result);
     }
 
     public async permanentDeleteCustomer(customerId: string) {
-        return await this.repository.permanentDeleteCustomer(customerId);
+        const result = await this.repository.permanentDeleteCustomer(customerId);
+        return this.toApplicationErrorResponse(result);
     }
 
-    public async isDocumentUnique(customerDocument: string): Promise<DocumentValidation>
+    public async isDocumentUnique(customerDocument: string): Promise<DocumentValidation | ApplicationErrorResponse>
     {
         if (!this.isDocumentValid(customerDocument)) {
             return {
@@ -51,6 +61,8 @@ export class CustomerService
         }
 
         const isDocumentInTheBin = await this.isDocumentInTheBin(customerDocument);
+
+        if ("code" in isDocumentInTheBin) return isDocumentInTheBin;
 
         if (isDocumentInTheBin.status === 409) return isDocumentInTheBin;
 
@@ -67,9 +79,15 @@ export class CustomerService
         }
     }
 
-    public async isDocumentInTheBin(customerDocument: string): Promise<DocumentValidation>
+    public async isDocumentInTheBin(customerDocument: string): Promise<DocumentValidation | ApplicationErrorResponse>
     {
-        if (await this.repository.isDocumentInTheBin(customerDocument)) {
+        const result = this.toApplicationErrorResponse(
+            await this.repository.isDocumentInTheBin(customerDocument)
+        );
+
+        if (typeof result !== "boolean") return result;
+
+        if (result) {
             return {
                 status: 409,
                 message: "O documento inserido já foi registrado por um cliente que está na lixeira"
@@ -82,26 +100,57 @@ export class CustomerService
         }
     }
 
-    public async getCustomer(id: string): Promise<CustomerResponse | null> {
-        const customer = await this.repository.getCustomer(id);
+    public async getCustomer(id: string): Promise<CustomerResponse | ApplicationErrorResponse> {
+        const response = await this.repository.getCustomer(id);
 
-        return customer ? this.toCustomerResponse(customer) : null;
+        if (response instanceof ApplicationError) {
+            return this.toApplicationErrorResponse(response);
+        }
+
+        const customerResponse = response
+            ? this.toCustomerResponse(response)
+            : new ApplicationError(404, "Usuário não encontrado.");
+
+        return this.toApplicationErrorResponse(customerResponse);
     }
 
-    public async getAllCustomers(): Promise<CustomerResponse[]> {
-        const customers = await this.repository.getAllCustomers();
+    public async getAllCustomers(): Promise<CustomerResponse[] | ApplicationErrorResponse> {
+        const response = await this.repository.getAllCustomers();
 
-        return customers.map((customer) => this.toCustomerResponse(customer));
+        if (response instanceof ApplicationError) {
+            return this.toApplicationErrorResponse(response);
+        }
+
+        const customersResponse: CustomerResponse[] = [];
+        for (const customer of response) {
+            const customerResponse = this.toApplicationErrorResponse(this.toCustomerResponse(customer));
+            if ("code" in customerResponse) return customerResponse;
+            customersResponse.push(customerResponse);
+        }
+
+        return customersResponse;
     }
 
     public async getDeletedCustomer(customerId: string) {
-        return await this.repository.getDeletedCustomer(customerId);
+        const result = await this.repository.getDeletedCustomer(customerId);
+        return this.toApplicationErrorResponse(result);
     }
 
-    public async getAllDeletedCustomers(): Promise<CustomerResponse[]> {
+    public async getAllDeletedCustomers(): Promise<CustomerResponse[] | ApplicationErrorResponse> {
         const customers = await this.repository.getAllDeletedCustomers();
 
-        return customers.map((customer) => this.toCustomerResponse(customer));
+        if (customers instanceof ApplicationError) {
+            return this.toApplicationErrorResponse(customers);
+        }
+
+        const customerResponses: CustomerResponse[] = [];
+        for (const customer of customers) {
+            const customerResponse = this.toApplicationErrorResponse(this.toCustomerResponse(customer));
+            if ("code" in customerResponse) return customerResponse;
+            customerResponses.push(customerResponse);
+        }
+
+        return customerResponses;
     }
 
     private isDocumentValid(customerDocument: string): boolean
@@ -126,8 +175,8 @@ export class CustomerService
     }
 
     private toCustomerResponse(
-        customer: Awaited<ReturnType<CustomerRepository['getAllCustomers']>>[number]
-    ): CustomerResponse
+        customer: CustomerWithAddress
+    ): CustomerResponse | ApplicationError
     {
         const responseFields = {
             id: customer.customer.id,
@@ -155,7 +204,7 @@ export class CustomerService
 
         if (customer.customer.personType === 'INDIVIDUAL') {
             if (customer.customer.birthDate === null) {
-                throw new Error(`Individual customer ${customer.customer.id} has no birth date`);
+                return new ApplicationError(403, `Individual customer ${customer.customer.id} has no birth date`);
             }
 
             return {
