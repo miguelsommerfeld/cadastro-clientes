@@ -273,6 +273,7 @@ function AddressFields({
   const [lookupResult, setLookupResult] = useState<{
     zipCode: string
     status: 'success' | 'error'
+    message?: string
   }>()
   const zipCode = address.zipCode.replace(/\D/g, '')
   const lookupState =
@@ -296,7 +297,11 @@ function AddressFields({
       .then((result) => {
         if (controller.signal.aborted) return
         if (!result) {
-          setLookupResult({ zipCode, status: 'error' })
+          setLookupResult({
+            zipCode,
+            status: 'error',
+            message: 'CEP não encontrado. Confira o número e tente novamente.',
+          })
           return
         }
         onChange('street', result.street)
@@ -305,8 +310,16 @@ function AddressFields({
         onChange('state', result.state)
         setLookupResult({ zipCode, status: 'success' })
       })
-      .catch(() => {
-        if (!controller.signal.aborted) setLookupResult({ zipCode, status: 'error' })
+      .catch((cause: unknown) => {
+        if (controller.signal.aborted) return
+        setLookupResult({
+          zipCode,
+          status: 'error',
+          message:
+            cause instanceof Error
+              ? cause.message
+              : 'Não foi possível consultar o CEP. Preencha o endereço manualmente.',
+        })
       })
     return () => controller.abort()
   }, [
@@ -360,8 +373,7 @@ function AddressFields({
             >
               {lookupState === 'loading' && 'Buscando endereço pelo CEP...'}
               {lookupState === 'success' && 'Endereço preenchido pelo CEP.'}
-              {lookupState === 'error' &&
-                'Não foi possível consultar o CEP. Preencha o endereço manualmente.'}
+              {lookupState === 'error' && lookupResult?.message}
             </span>
           )}
         </Field>

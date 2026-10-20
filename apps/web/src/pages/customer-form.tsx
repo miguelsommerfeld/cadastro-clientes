@@ -231,15 +231,24 @@ export function CustomerFormPage({ customerId }: { customerId?: string }) {
     event.preventDefault()
     if (saving) return
 
-    if (!editing && step < wizardStep.review) {
-      if (await validateStep(step)) setStep((current) => current + 1)
-      return
-    }
-    if (
-      !(await validateStep(
-        editing ? customerEditValidationStep : wizardStep.review,
-      ))
-    ) {
+    try {
+      if (!editing && step < wizardStep.review) {
+        if (await validateStep(step)) setStep((current) => current + 1)
+        return
+      }
+      if (
+        !(await validateStep(
+          editing ? customerEditValidationStep : wizardStep.review,
+        ))
+      ) {
+        return
+      }
+    } catch (cause) {
+      setLoadError(
+        cause instanceof Error
+          ? cause.message
+          : 'Não foi possível validar os dados. Tente novamente.',
+      )
       return
     }
 
@@ -267,14 +276,17 @@ export function CustomerFormPage({ customerId }: { customerId?: string }) {
         await navigate({ to: '/' })
         return
       }
-      if (!editing && cause instanceof ApiError && cause.status === 409) {
-        setErrors({
-          document: cause.message || 'Este documento já está cadastrado na lixeira.',
-        })
-        setTrashSuggestion(true)
-        setStep(wizardStep.identity)
-        setErrorFocusVersion((version) => version + 1)
-        return
+      if (cause instanceof ApiError) {
+        const field = apiErrorField(cause.message)
+        if (field) {
+          setErrors({ [field]: cause.message })
+          setStep(field === 'email' ? wizardStep.contact : wizardStep.identity)
+          setErrorFocusVersion((version) => version + 1)
+          if (!editing && field === 'document' && cause.message.toLowerCase().includes('lixeira')) {
+            setTrashSuggestion(true)
+          }
+          return
+        }
       }
       if (cause instanceof Error && cause.message) setLoadError(cause.message)
       else setLoadError('Não foi possível salvar o cliente. Tente novamente.')
@@ -593,6 +605,21 @@ function mapIssues(
     }
   }
   return mapped
+}
+
+function apiErrorField(message: string): 'document' | 'email' | undefined {
+  const normalizedMessage = message.toLocaleLowerCase('pt-BR')
+  if (normalizedMessage.includes('e-mail') || normalizedMessage.includes('email')) {
+    return 'email'
+  }
+  if (
+    normalizedMessage.includes('documento') ||
+    normalizedMessage.includes('cpf') ||
+    normalizedMessage.includes('cnpj')
+  ) {
+    return 'document'
+  }
+  return undefined
 }
 
 const customerFieldNames: Record<CustomerFormField, true> = {

@@ -19,15 +19,27 @@ export async function lookupAddressByZipCode(
   zipCode: string,
   signal: AbortSignal,
 ): Promise<AddressLookup | null> {
-  const response = await fetch(
-    `https://viacep.com.br/ws/${encodeURIComponent(zipCode)}/json/`,
-    { signal },
-  )
+  let response: Response
+  try {
+    response = await fetch(
+      `https://viacep.com.br/ws/${encodeURIComponent(zipCode)}/json/`,
+      { signal },
+    )
+  } catch (cause) {
+    if (signal.aborted) throw cause
+    throw new Error('Não foi possível consultar o CEP. Preencha o endereço manualmente.')
+  }
   if (!response.ok) {
-    throw new Error(`A consulta do CEP falhou (${response.status}).`)
+    throw new Error('Não foi possível consultar o CEP. Preencha o endereço manualmente.')
   }
 
-  const parsed = viaCepResponseSchema.safeParse(await response.json())
+  let body: unknown
+  try {
+    body = await response.json()
+  } catch {
+    throw new Error('O serviço de CEP retornou uma resposta inválida.')
+  }
+  const parsed = viaCepResponseSchema.safeParse(body)
   if (!parsed.success) {
     throw new Error('O serviço de CEP retornou um endereço inválido.')
   }
