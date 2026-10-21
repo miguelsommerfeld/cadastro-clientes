@@ -6,8 +6,16 @@ enum PersonType {
     @@type("pg/text@1")
 }
 
+enum Role {
+    ADMIN
+    OPERATOR
+    VIEWER
+    @@type("pg/text@1")
+}
+
 model Customers {
     id         String        @id @default(uuid()) @unique @map("id")
+    tenantId   String        @relation(id: Tenants) @unique @map("tenant_id")
     personType PersonType    @map("person_type")
     document   VarChar(14)   @unique @map("document")
     name       VarChar(150)  @map("name")
@@ -23,15 +31,50 @@ model Customers {
 }
 
 model Addresses {
-    id         String       @id @default(uuid()) @unique @map("id")
-    customerId String       @relation(id: Customers) @unique @map("customer_id")
-    zipCode    VarChar(8)   @map("zip_code")
-    street     VarChar(150) @map("street")
-    number     VarChar(10)? @default("S/N") @map("number")
-    complement VarChar(100) @map("complement")
-    district   VarChar(100) @map("district")
-    city       VarChar(100) @map("city")
-    state      VarChar(2)   @map("state")
+    id         String        @id @default(uuid()) @unique @map("id")
+    customerId String        @relation(id: Customers) @unique @map("customer_id")
+    zipCode    VarChar(8)    @map("zip_code")
+    street     VarChar(150)  @map("street")
+    number     VarChar(10)   @default("S/N") @map("number")
+    complement VarChar(100)? @map("complement")
+    district   VarChar(100)  @map("district")
+    city       VarChar(100)  @map("city")
+    state      VarChar(2)    @map("state")
 
     @@map("addresses")
+}
+
+model Users {
+    id           String       @unique @map("id")
+    tenantId     String       @relation(id: Tenants) @unique @map("tenant_id")
+    role         Role         @map("role")
+    name         VarChar(100) @map("name")
+    email        VarChar(254) @unique @map("email")
+    passwordHash VarChar(253) @map("password_hash")
+    createdAt    DateTime     @map("created_at")
+    updatedAt    DateTime?    @map("updated_at")
+
+    @@map("users")
+}
+
+model Sessions {
+    id               String       @map("id")
+    userId           String       @unique @map("user_id")
+    refreshTokenHash VarChar(253) @map("refresh_token_hash")
+    expiresAt        DateTime     @map("expires_at")
+    revokedAt        DateTime?    @map("revoked_at")
+    createdAt        DateTime     @map("created_at")
+
+    @@map("sessions")
+}
+
+
+model Tenants {
+    id        String       @unique @map("id")
+    name      VarChar(100) @map("name")
+    slug      VarChar()    @unique @map("slug")
+    createdAt DateTime     @map("created_at")
+    updateAt  DateTime     @map("updated_at")
+
+    @@map("tenants")
 }
