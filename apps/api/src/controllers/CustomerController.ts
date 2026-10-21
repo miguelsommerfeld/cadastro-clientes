@@ -1,8 +1,7 @@
 import { CustomerService } from "@/services/CustomerService";
-import { AddressRequestSchema } from "@packages/contracts/address.schema";
+import type { AddressRequestSchema } from "@packages/contracts/address.schema";
 import type {
     CustomerRegistration,
-    CustomerResponse,
     CustomerUpdateData
 } from "@packages/contracts/customer.schema";
 import type { DocumentValidation } from '@packages/contracts/document.schema'
@@ -16,7 +15,7 @@ export class CustomerController
         this.service = service;
     }
 
-    public registerCustomer(customerData: CustomerRegistration, addressData: AddressRequestSchema): Promise<CustomerResponse>
+    public registerCustomer(customerData: CustomerRegistration, addressData: AddressRequestSchema)
     {
         return this.service.registerCustomer(customerData, addressData);
     }
@@ -27,18 +26,18 @@ export class CustomerController
     }
 
     public async deleteCustomer(customerId: string) {
-        await this.service.deleteCustomer(customerId);
+        return await this.service.deleteCustomer(customerId);
     }
 
     public async restoreCustomer(customerId: string) {
-        await this.service.restoreCustomer(customerId);
+        return await this.service.restoreCustomer(customerId);
     }
 
     public async permanentDeleteCustomer(customerId: string) {
-        await this.service.permanentDeleteCustomer(customerId);
+        return await this.service.permanentDeleteCustomer(customerId);
     }
 
-    public isDocumentUnique(customerDocument: string): Promise<DocumentValidation>
+    public isDocumentUnique(customerDocument: string)
     {
         return this.service.isDocumentUnique(customerDocument);
     }
@@ -52,7 +51,7 @@ export class CustomerController
         return await this.service.getCustomer(id);
     }
 
-    public getAllCustomers(): Promise<CustomerResponse[]>
+    public getAllCustomers()
     {
         return this.service.getAllCustomers();
     }
@@ -62,7 +61,7 @@ export class CustomerController
         return await this.service.getDeletedCustomer(customerId);
     }
 
-    public getAllDeletedCustomers(): Promise<CustomerResponse[]> {
+    public getAllDeletedCustomers() {
         return this.service.getAllDeletedCustomers();
     }
 }

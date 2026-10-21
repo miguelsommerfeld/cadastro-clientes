@@ -21,28 +21,58 @@ export class ApiError extends Error {
 }
 
 export async function request<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, {
-    ...init,
-    headers: {
-      ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
-      ...init?.headers,
-    },
-  })
+  let response: Response
+  try {
+    response = await fetch(url, {
+      ...init,
+      headers: {
+        ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
+        ...init?.headers,
+      },
+    })
+  } catch (cause) {
+    if (cause instanceof DOMException && cause.name === 'AbortError') throw cause
+    throw new ApiError(
+      'Não foi possível efetuar a sua conexão. Verifique se o serviço está disponível e tente novamente.',
+      0,
+    )
+  }
 
   if (!response.ok) {
-    let message = 'Não foi possível concluir a solicitação.'
+    const fallbackMessage =
+      response.status >= 500
+        ? 'Não foi possível concluir sua solicitação no momento. Tente novamente em alguns instantes.'
+        : 'Não foi possível concluir a solicitação.'
+    let message = fallbackMessage
     try {
-      const body = (await response.json()) as { message?: string; error?: string }
-      message = body.message ?? body.error ?? message
+      const body = (await response.json()) as { message?: unknown; error?: unknown }
+      const apiMessage =
+        (typeof body.message === 'string' && body.message.trim()) ||
+        (typeof body.error === 'string' && body.error.trim())
+      if (apiMessage && !isTechnicalServerMessage(apiMessage)) {
+        message = apiMessage
+      }
     } catch {
-      if (response.statusText) message = response.statusText
+      if (response.status < 500 && response.statusText) {
+        message = response.statusText
+      }
     }
     throw new ApiError(message, response.status)
   }
 
   if (response.status === 204) return undefined as T
-  const body = await response.text()
-  return body ? (JSON.parse(body) as T) : (undefined as T)
+  try {
+    const body = await response.text()
+    return body ? (JSON.parse(body) as T) : (undefined as T)
+  } catch {
+    throw new ApiError('A API retornou uma resposta inválida.', response.status)
+  }
+}
+
+function isTechnicalServerMessage(message: string) {
+  return /bad gateway|gateway timeout|service unavailable|internal server error|upstream|proxy error/i.test(
+    message,
+  )
 }
 
 function joinApiUrl(path: string) {
