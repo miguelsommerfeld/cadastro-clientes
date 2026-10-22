@@ -442,7 +442,7 @@
                   "kind": "scalar"
                 }
               },
-              "updateAt": {
+              "updatedAt": {
                 "nullable": false,
                 "type": {
                   "codecId": "pg/timestamptz-temporal@1",
@@ -465,7 +465,7 @@
                 "slug": {
                   "column": "slug"
                 },
-                "updateAt": {
+                "updatedAt": {
                   "column": "updated_at"
                 }
               },

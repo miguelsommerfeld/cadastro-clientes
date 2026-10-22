@@ -74,7 +74,7 @@ model Tenants {
     name      VarChar(100) @map("name")
     slug      VarChar()    @unique @map("slug")
     createdAt DateTime     @map("created_at")
-    updateAt  DateTime     @map("updated_at")
+    updatedAt  DateTime     @map("updated_at")
 
     @@map("tenants")
 }

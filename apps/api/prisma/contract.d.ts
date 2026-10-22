@@ -272,7 +272,7 @@ export type FieldOutputTypes = {
       readonly id: CodecTypes['pg/text@1']['output'];
       readonly name: Varchar<100>;
       readonly slug: CodecTypes['sql/varchar@1']['output'];
-      readonly updateAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     };
     readonly Users: {
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
@@ -326,7 +326,7 @@ export type FieldInputTypes = {
       readonly id: CodecTypes['pg/text@1']['input'];
       readonly name: CodecTypes['sql/varchar@1']['input'];
       readonly slug: CodecTypes['sql/varchar@1']['input'];
-      readonly updateAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
     };
     readonly Users: {
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
@@ -491,7 +491,7 @@ export namespace Models {
     id: CodecTypes['pg/text@1']['output'];
     name: Varchar<100>;
     slug: CodecTypes['sql/varchar@1']['output'];
-    updateAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     readonly [RelationKeys]?: never;
   };
   export type public_Users = {
@@ -1143,7 +1143,7 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'sql/varchar@1' };
               };
-              readonly updateAt: {
+              readonly updatedAt: {
                 readonly nullable: false;
                 readonly type: {
                   readonly kind: 'scalar';
@@ -1160,7 +1160,7 @@ type ContractBase = Omit<
                 readonly id: { readonly column: 'id' };
                 readonly name: { readonly column: 'name' };
                 readonly slug: { readonly column: 'slug' };
-                readonly updateAt: { readonly column: 'updated_at' };
+                readonly updatedAt: { readonly column: 'updated_at' };
               };
             };
           };
