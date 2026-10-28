@@ -5,6 +5,7 @@ import type {
     CustomerUpdateData
 } from "@packages/contracts/customer.schema";
 import type { DocumentValidation } from '@packages/contracts/document.schema'
+import type { TenantId } from "@packages/contracts/auth.schema";
 
 export class CustomerController
 {
@@ -15,53 +16,57 @@ export class CustomerController
         this.service = service;
     }
 
-    public registerCustomer(customerData: CustomerRegistration, addressData: AddressRequestSchema)
+    public registerCustomer(
+        tenantId: TenantId,
+        customerData: CustomerRegistration,
+        addressData: AddressRequestSchema
+    )
     {
-        return this.service.registerCustomer(customerData, addressData);
+        return this.service.registerCustomer(tenantId, customerData, addressData);
     }
 
-    public async updateCustomer(id: string, customerData: CustomerUpdateData)
+    public async updateCustomer(tenantId: TenantId, id: string, customerData: CustomerUpdateData)
     {
-        return await this.service.updateCustomer(id, customerData);
+        return await this.service.updateCustomer(tenantId, id, customerData);
     }
 
-    public async deleteCustomer(customerId: string) {
-        return await this.service.deleteCustomer(customerId);
+    public async deleteCustomer(tenantId: TenantId, customerId: string) {
+        return await this.service.deleteCustomer(tenantId, customerId);
     }
 
-    public async restoreCustomer(customerId: string) {
-        return await this.service.restoreCustomer(customerId);
+    public async restoreCustomer(tenantId: TenantId, customerId: string) {
+        return await this.service.restoreCustomer(tenantId, customerId);
     }
 
-    public async permanentDeleteCustomer(customerId: string) {
-        return await this.service.permanentDeleteCustomer(customerId);
+    public async permanentDeleteCustomer(tenantId: TenantId, customerId: string) {
+        return await this.service.permanentDeleteCustomer(tenantId, customerId);
     }
 
-    public isDocumentUnique(customerDocument: string)
+    public isDocumentUnique(tenantId: TenantId, customerDocument: string)
     {
-        return this.service.isDocumentUnique(customerDocument);
+        return this.service.isDocumentUnique(tenantId, customerDocument);
     }
 
-    public isEmailRegistered(userEmail: string): Promise<DocumentValidation> {
-        return this.service.isEmailRegistered(userEmail);
+    public isEmailRegistered(tenantId: TenantId, userEmail: string): Promise<DocumentValidation> {
+        return this.service.isEmailRegistered(tenantId, userEmail);
     }
 
-    public async getCustomer(id: string)
+    public async getCustomer(tenantId: TenantId, id: string)
     {
-        return await this.service.getCustomer(id);
+        return await this.service.getCustomer(tenantId, id);
     }
 
-    public getAllCustomers()
+    public getAllCustomers(tenantId: TenantId)
     {
-        return this.service.getAllCustomers();
+        return this.service.getAllCustomers(tenantId);
     }
 
-    public async getDeletedCustomer(customerId: string)
+    public async getDeletedCustomer(tenantId: TenantId, customerId: string)
     {
-        return await this.service.getDeletedCustomer(customerId);
+        return await this.service.getDeletedCustomer(tenantId, customerId);
     }
 
-    public getAllDeletedCustomers() {
-        return this.service.getAllDeletedCustomers();
+    public getAllDeletedCustomers(tenantId: TenantId) {
+        return this.service.getAllDeletedCustomers(tenantId);
     }
 }

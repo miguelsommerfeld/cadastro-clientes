@@ -18,7 +18,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'2f5b92d3beb98084793cccdcc55e41cf99bd6f1378df5babee84df21b6bcfaba'>;
+  StorageHashBase<'891a366bb63d48652e8b87217923ad7f3bfc80263699313e692c0c21246aaefb'>;
 export type ExecutionHash =
   ExecutionHashBase<'8ec3e0ad7e78f18bc2a71fd162ac635a941999fb049bdf8744f226a9b610dab7'>;
 export type ProfileHash =
@@ -695,11 +695,17 @@ type ContractBase = Omit<
               primaryKey: { readonly columns: readonly ['id'] };
               uniques: readonly [
                 { readonly columns: readonly ['id'] },
-                { readonly columns: readonly ['tenant_id'] },
-                { readonly columns: readonly ['document'] },
                 { readonly columns: readonly ['email'] },
+                { readonly columns: readonly ['tenant_id', 'document'] },
               ];
-              indexes: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'customers_tenant_id_idx_41c0d441';
+                  readonly prefix: 'customers_tenant_id_idx';
+                  readonly columns: readonly ['tenant_id'];
+                  readonly unique: false;
+                },
+              ];
               foreignKeys: readonly [];
             };
             readonly sessions: {
@@ -742,8 +748,21 @@ type ContractBase = Omit<
                   readonly many: false;
                 };
               };
-              uniques: readonly [{ readonly columns: readonly ['user_id'] }];
-              indexes: readonly [];
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'sessions_refresh_token_hash_idx_703bb9a0';
+                  readonly prefix: 'sessions_refresh_token_hash_idx';
+                  readonly columns: readonly ['refresh_token_hash'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'sessions_user_id_idx_6c952402';
+                  readonly prefix: 'sessions_user_id_idx';
+                  readonly columns: readonly ['user_id'];
+                  readonly unique: false;
+                },
+              ];
               foreignKeys: readonly [];
             };
             readonly tenants: {
@@ -843,10 +862,16 @@ type ContractBase = Omit<
               };
               uniques: readonly [
                 { readonly columns: readonly ['id'] },
-                { readonly columns: readonly ['tenant_id'] },
                 { readonly columns: readonly ['email'] },
               ];
-              indexes: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'users_tenant_id_idx_41c0d441';
+                  readonly prefix: 'users_tenant_id_idx';
+                  readonly columns: readonly ['tenant_id'];
+                  readonly unique: false;
+                },
+              ];
               foreignKeys: readonly [];
             };
           };

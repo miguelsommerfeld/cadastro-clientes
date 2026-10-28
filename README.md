@@ -28,6 +28,7 @@ Aplicação para cadastro e gerenciamento de clientes pessoa física e pessoa ju
 - Remoção lógica, listagem de clientes removidos e restauração.
 - Exclusão permanente de clientes removidos.
 - Verificação de saúde da API e documentação interativa via Swagger.
+- Cadastro de conta e tenant, login e manutenção de sessão com JWT e cookies seguros.
 
 As telas ficam disponíveis em:
 
@@ -96,6 +97,8 @@ O script `start.sh` verifica os pré-requisitos antes de iniciar os serviços. N
    ```
 
    `DB_URL` é a URL usada pela API e pelas migrações. No ambiente do Compose, o host do banco é `db`. Use uma senha local segura e mantenha o arquivo `.env` fora do controle de versão.
+   Configure também `JWT_SECRET` com pelo menos 32 caracteres aleatórios, por exemplo com `openssl rand -base64 32`.
+   O `.env.example` define `NODE_ENV=development` para uso local; em outros ambientes, use `NODE_ENV=production` para ativar o atributo `Secure` nos cookies.
 
 3. Inicie a aplicação a partir da raiz do repositório:
 
@@ -182,11 +185,18 @@ As rotas de clientes usam o prefixo `/api/v1`. A URL base é:
 http://localhost:3333/api/v1
 ```
 
+As rotas de clientes exigem o cookie `access_token`; o tenant usado nas consultas vem exclusivamente do JWT. `ADMIN` pode executar todas as ações, `OPERATOR` pode ler, cadastrar, editar, mover e restaurar clientes, e `VIEWER` pode apenas consultar. Clientes de outro tenant respondem como não encontrados.
+
 ### Rotas disponíveis
 
 | Método | Caminho | Parâmetros | Descrição |
 | --- | --- | --- | --- |
 | `GET` | `/health` | — | Verifica a disponibilidade da API e do banco. Retorna `200` ou `503`. |
+| `POST` | `/api/v1/auth/register` | Corpo JSON com dados do tenant e do usuário | Cria tenant e usuário `ADMIN`, inicia a sessão e define cookies httpOnly. |
+| `POST` | `/api/v1/auth/login` | E-mail e senha | Valida as credenciais e define cookies httpOnly; limite de 5 tentativas por minuto por IP/e-mail. |
+| `POST` | `/api/v1/auth/refresh` | Cookie `refresh_token` | Faz a rotação do refresh token e emite novo access token. |
+| `POST` | `/api/v1/auth/logout` | Cookies de autenticação | Revoga a sessão e limpa os cookies; a operação é idempotente. |
+| `GET` | `/api/v1/auth/session` | Cookie `access_token` | Retorna o usuário, tenant, role e permissões, ou `null` se não houver sessão válida. |
 | `GET` | `/api/v1/customers` | Query opcional `id` | Lista clientes ativos; com `id`, retorna um cliente. Retorna `404` se o ID não for encontrado entre os ativos. |
 | `GET` | `/api/v1/customers/deleted` | — | Lista clientes na lixeira (removidos logicamente). |
 | `POST` | `/api/v1/customers` | Corpo JSON | Cadastra um cliente e seu endereço. Retorna `201` quando criado. |
@@ -260,11 +270,13 @@ As consultas e o cadastro retornam os dados do cliente, incluindo `id`, `personT
 
 Erros de validação e de operação incluem uma mensagem descritiva. Entre os status usados pela API estão `400` (dados ou parâmetros inválidos), `404` (cliente não encontrado), `409` (conflito de cadastro) e `503` (serviço indisponível no health check). Consulte o Swagger para os schemas e respostas documentados de cada rota.
 
+Os tokens de autenticação são enviados somente em cookies `httpOnly` com `SameSite=Strict`; em produção, também usam `Secure`. O access token expira em 15 minutos e o refresh token em 7 dias. O logout revoga o refresh token; um access token já emitido pode continuar válido por até 15 minutos.
+
 ## Modelos e validações
 
 - **Pessoa física:** CPF válido, nome com 3 a 150 caracteres, e-mail válido, telefone brasileiro e data de nascimento entre `1900-01-01` e a data atual.
 - **Pessoa jurídica:** CNPJ válido; nome fantasia é opcional.
-- **Documento e e-mail:** não podem ser repetidos entre os clientes cadastrados.
+- **Documento:** único dentro de cada tenant. O e-mail de cliente mantém unicidade global.
 - **Telefone:** validado como número brasileiro e armazenado apenas com dígitos.
 - **Endereço:** CEP com 8 dígitos (com ou sem hífen) e UF correspondente a um estado brasileiro.
 - **Remoção lógica:** o cliente permanece armazenado e pode ser consultado na lixeira e restaurado.

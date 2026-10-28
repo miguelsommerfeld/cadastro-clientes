@@ -584,6 +584,7 @@ function customerToDraft(customer: Customer): CustomerDraft {
       ...customer.address,
       zipCode: formatZipCode(customer.address?.zipCode ?? ''),
       number: customer.address?.number ?? '',
+      complement: customer.address?.complement ?? '',
     },
   }
 }

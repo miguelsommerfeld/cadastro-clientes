@@ -7,6 +7,7 @@ import type {
     CustomerUpdateData
 } from "@packages/contracts/customer.schema";
 import type { DocumentValidation } from '@packages/contracts/document.schema'
+import type { TenantId } from "@packages/contracts/auth.schema";
 import { cnpj, cpf } from 'cpf-cnpj-validator'
 import { Service, type ApplicationErrorResponse } from "./Service";
 import type { CustomerWithAddress } from "@/models/CustomerModel";
@@ -22,36 +23,40 @@ export class CustomerService extends Service
     }
 
     public async registerCustomer(
+        tenantId: TenantId,
         customerData: CustomerRegistration,
         addressData: AddressRequestSchema
     ): Promise<CustomerResponse | ApplicationErrorResponse>
     {
-        const customer = await this.repository.registerCustomer(customerData, addressData);
+        const customer = await this.repository.registerCustomer(tenantId, customerData, addressData);
 
         return this.toApplicationErrorResponse(this.toCustomerResponse(customer));
     }
 
-    public async updateCustomer(id: string, customerData: CustomerUpdateData)
+    public async updateCustomer(tenantId: TenantId, id: string, customerData: CustomerUpdateData)
     {
-        return await this.repository.updateCustomer(id, customerData);
+        return await this.repository.updateCustomer(tenantId, id, customerData);
     }
 
-    public async deleteCustomer(customerId: string) {
-        const result = await this.repository.deleteCustomer(customerId);
+    public async deleteCustomer(tenantId: TenantId, customerId: string) {
+        const result = await this.repository.deleteCustomer(tenantId, customerId);
         return this.toApplicationErrorResponse(result);
     }
 
-    public async restoreCustomer(customerId: string) {
-        const result = await this.repository.restoreCustomer(customerId);
+    public async restoreCustomer(tenantId: TenantId, customerId: string) {
+        const result = await this.repository.restoreCustomer(tenantId, customerId);
         return this.toApplicationErrorResponse(result);
     }
 
-    public async permanentDeleteCustomer(customerId: string) {
-        const result = await this.repository.permanentDeleteCustomer(customerId);
+    public async permanentDeleteCustomer(tenantId: TenantId, customerId: string) {
+        const result = await this.repository.permanentDeleteCustomer(tenantId, customerId);
         return this.toApplicationErrorResponse(result);
     }
 
-    public async isDocumentUnique(customerDocument: string): Promise<DocumentValidation | ApplicationErrorResponse>
+    public async isDocumentUnique(
+        tenantId: TenantId,
+        customerDocument: string
+    ): Promise<DocumentValidation | ApplicationErrorResponse>
     {
         if (!this.isDocumentValid(customerDocument)) {
             return {
@@ -60,13 +65,13 @@ export class CustomerService extends Service
             };
         }
 
-        const isDocumentInTheBin = await this.isDocumentInTheBin(customerDocument);
+        const isDocumentInTheBin = await this.isDocumentInTheBin(tenantId, customerDocument);
 
         if ("code" in isDocumentInTheBin) return isDocumentInTheBin;
 
         if (isDocumentInTheBin.status === 409) return isDocumentInTheBin;
 
-        if (!await this.repository.isDocumentUnique(customerDocument)) {
+        if (!await this.repository.isDocumentUnique(tenantId, customerDocument)) {
             return {
                 status: 400,
                 message: "O documento inserido já foi registrado"
@@ -79,10 +84,13 @@ export class CustomerService extends Service
         }
     }
 
-    public async isDocumentInTheBin(customerDocument: string): Promise<DocumentValidation | ApplicationErrorResponse>
+    public async isDocumentInTheBin(
+        tenantId: TenantId,
+        customerDocument: string
+    ): Promise<DocumentValidation | ApplicationErrorResponse>
     {
         const result = this.toApplicationErrorResponse(
-            await this.repository.isDocumentInTheBin(customerDocument)
+            await this.repository.isDocumentInTheBin(tenantId, customerDocument)
         );
 
         if (typeof result !== "boolean") return result;
@@ -100,8 +108,8 @@ export class CustomerService extends Service
         }
     }
 
-    public async getCustomer(id: string): Promise<CustomerResponse | ApplicationErrorResponse> {
-        const response = await this.repository.getCustomer(id);
+    public async getCustomer(tenantId: TenantId, id: string): Promise<CustomerResponse | ApplicationErrorResponse> {
+        const response = await this.repository.getCustomer(tenantId, id);
 
         if (response instanceof ApplicationError) {
             return this.toApplicationErrorResponse(response);
@@ -114,8 +122,8 @@ export class CustomerService extends Service
         return this.toApplicationErrorResponse(customerResponse);
     }
 
-    public async getAllCustomers(): Promise<CustomerResponse[] | ApplicationErrorResponse> {
-        const response = await this.repository.getAllCustomers();
+    public async getAllCustomers(tenantId: TenantId): Promise<CustomerResponse[] | ApplicationErrorResponse> {
+        const response = await this.repository.getAllCustomers(tenantId);
 
         if (response instanceof ApplicationError) {
             return this.toApplicationErrorResponse(response);
@@ -131,13 +139,13 @@ export class CustomerService extends Service
         return customersResponse;
     }
 
-    public async getDeletedCustomer(customerId: string) {
-        const result = await this.repository.getDeletedCustomer(customerId);
+    public async getDeletedCustomer(tenantId: TenantId, customerId: string) {
+        const result = await this.repository.getDeletedCustomer(tenantId, customerId);
         return this.toApplicationErrorResponse(result);
     }
 
-    public async getAllDeletedCustomers(): Promise<CustomerResponse[] | ApplicationErrorResponse> {
-        const customers = await this.repository.getAllDeletedCustomers();
+    public async getAllDeletedCustomers(tenantId: TenantId): Promise<CustomerResponse[] | ApplicationErrorResponse> {
+        const customers = await this.repository.getAllDeletedCustomers(tenantId);
 
         if (customers instanceof ApplicationError) {
             return this.toApplicationErrorResponse(customers);
@@ -158,8 +166,8 @@ export class CustomerService extends Service
         return cpf.isValid(customerDocument) || cnpj.isValid(customerDocument);
     }
 
-    public async isEmailRegistered(userEmail: string): Promise<DocumentValidation> {
-        const isAlreadyRegistered = await this.repository.isEmailRegistered(userEmail);
+    public async isEmailRegistered(tenantId: TenantId, userEmail: string): Promise<DocumentValidation> {
+        const isAlreadyRegistered = await this.repository.isEmailRegistered(tenantId, userEmail);
 
         if (isAlreadyRegistered) {
             return {

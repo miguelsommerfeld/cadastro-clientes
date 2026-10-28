@@ -777,7 +777,16 @@
                 }
               },
               "foreignKeys": [],
-              "indexes": [],
+              "indexes": [
+                {
+                  "columns": [
+                    "tenant_id"
+                  ],
+                  "name": "customers_tenant_id_idx_41c0d441",
+                  "prefix": "customers_tenant_id_idx",
+                  "unique": false
+                }
+              ],
               "primaryKey": {
                 "columns": [
                   "id"
@@ -791,17 +800,13 @@
                 },
                 {
                   "columns": [
-                    "tenant_id"
-                  ]
-                },
-                {
-                  "columns": [
-                    "document"
-                  ]
-                },
-                {
-                  "columns": [
                     "email"
+                  ]
+                },
+                {
+                  "columns": [
+                    "tenant_id",
+                    "document"
                   ]
                 }
               ]
@@ -843,14 +848,25 @@
                 }
               },
               "foreignKeys": [],
-              "indexes": [],
-              "uniques": [
+              "indexes": [
+                {
+                  "columns": [
+                    "refresh_token_hash"
+                  ],
+                  "name": "sessions_refresh_token_hash_idx_703bb9a0",
+                  "prefix": "sessions_refresh_token_hash_idx",
+                  "unique": false
+                },
                 {
                   "columns": [
                     "user_id"
-                  ]
+                  ],
+                  "name": "sessions_user_id_idx_6c952402",
+                  "prefix": "sessions_user_id_idx",
+                  "unique": false
                 }
-              ]
+              ],
+              "uniques": []
             },
             "tenants": {
               "columns": {
@@ -964,16 +980,20 @@
                 }
               },
               "foreignKeys": [],
-              "indexes": [],
+              "indexes": [
+                {
+                  "columns": [
+                    "tenant_id"
+                  ],
+                  "name": "users_tenant_id_idx_41c0d441",
+                  "prefix": "users_tenant_id_idx",
+                  "unique": false
+                }
+              ],
               "uniques": [
                 {
                   "columns": [
                     "id"
-                  ]
-                },
-                {
-                  "columns": [
-                    "tenant_id"
                   ]
                 },
                 {
@@ -1006,7 +1026,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "2f5b92d3beb98084793cccdcc55e41cf99bd6f1378df5babee84df21b6bcfaba"
+    "storageHash": "891a366bb63d48652e8b87217923ad7f3bfc80263699313e692c0c21246aaefb"
   },
   "execution": {
     "executionHash": "8ec3e0ad7e78f18bc2a71fd162ac635a941999fb049bdf8744f226a9b610dab7",

@@ -1,42 +1,44 @@
-import { randomUUID } from 'node:crypto';
+import { randomUUID } from "node:crypto";
+import { Temporal } from "temporal-polyfill";
+import type {
+    AddressRequestSchema
+} from "@packages/contracts/address.schema";
 import type {
     CustomerRegistration,
-    CustomerResponse,
     CustomerUpdateData
-} from '@packages/contracts/customer.schema'
-import { Temporal } from 'temporal-polyfill';
-import type { Models } from '../../prisma/contract';
-import { Model } from './Model'
-import type { AddressRequestSchema } from '@packages/contracts/address.schema';
-import { AddressModel } from '@/models/AddressModel'
-import { ApplicationError } from '@/errors/application.error';
+} from "@packages/contracts/customer.schema";
+import type { TenantId } from "@packages/contracts/auth.schema";
+import type { Models } from "../../prisma/contract";
+import { ApplicationError } from "@/errors/application.error";
+import { AddressModel } from "@/models/AddressModel";
+import { Model } from "./Model";
 
 export type CustomerWithAddress = {
     customer: Models.public_Customers;
-    address: Awaited<ReturnType<AddressModel['getAddress']>>;
+    address: Awaited<ReturnType<AddressModel["getAddress"]>>;
 };
 
 export class CustomerModel extends Model {
-    private readonly addressModel: AddressModel;
-
-    constructor(addressModel: AddressModel)
-    {
+    constructor(private readonly addressModel: AddressModel) {
         super();
-        this.addressModel = addressModel;
     }
 
-    public async registerCustomer(customerData: CustomerRegistration, addressData: AddressRequestSchema)
-    {
+    public async registerCustomer(
+        tenantId: TenantId,
+        customerData: CustomerRegistration,
+        addressData: AddressRequestSchema
+    ) {
         const now = Temporal.Now.instant();
         const customer = {
             id: randomUUID(),
+            tenantId,
             personType: customerData.personType,
             document: this.toVarchar(customerData.document, 14),
             name: this.toVarchar(customerData.name, 150),
-            tradeName: customerData.personType === 'COMPANY' && customerData.tradeName
+            tradeName: customerData.personType === "COMPANY" && customerData.tradeName
                 ? this.toVarchar(customerData.tradeName, 150)
                 : null,
-            birthDate: customerData.personType === 'INDIVIDUAL'
+            birthDate: customerData.personType === "INDIVIDUAL"
                 ? Temporal.PlainDate.from(customerData.birthDate)
                 : null,
             email: this.toVarchar(customerData.email, 254),
@@ -49,17 +51,17 @@ export class CustomerModel extends Model {
         const savedCustomer = await this.db.orm.public.Customers.create(customer);
         const address = await this.addressModel.registerAddress(savedCustomer.id, addressData);
 
-        return {
-            customer: savedCustomer,
-            address
-        }
+        return { customer: savedCustomer, address };
     }
 
-    public async updateCustomer(id: string, customerData: CustomerUpdateData): Promise<void>
-    {
+    public async updateCustomer(
+        tenantId: TenantId,
+        id: string,
+        customerData: CustomerUpdateData
+    ): Promise<void> {
         const updates: Partial<Pick<
             Models.public_Customers,
-            'document' | 'name' | 'tradeName' | 'birthDate' | 'email' | 'phone'
+            "document" | "name" | "tradeName" | "birthDate" | "email" | "phone"
         >> = {};
 
         if (customerData.document !== undefined) {
@@ -89,7 +91,7 @@ export class CustomerModel extends Model {
 
         if (Object.keys(updates).length > 0) {
             await this.db.orm.public.Customers
-                .where({ id })
+                .where({ id, tenantId })
                 .update({
                     ...updates,
                     updatedAt: Temporal.Now.instant()
@@ -101,98 +103,114 @@ export class CustomerModel extends Model {
         }
     }
 
-    public async deleteCustomer(customerId: string): Promise<void | ApplicationError>
-    {
+    public async deleteCustomer(tenantId: TenantId, customerId: string): Promise<void | ApplicationError> {
         try {
             const now = Temporal.Now.instant();
-            await this.db.orm.public.Customers.where({ id: customerId })
-                                              .update({ updatedAt: now, deletedAt: now })
+            await this.db.orm.public.Customers
+                .where({ id: customerId, tenantId })
+                .update({ updatedAt: now, deletedAt: now });
         } catch {
-            return new ApplicationError(503, `Não foi possível adicionar o usuário de ID ${customerId} à lixeira`)
+            return new ApplicationError(503, `Não foi possível adicionar o usuário de ID ${customerId} à lixeira`);
         }
     }
 
-    public async restoreCustomer(customerId: string): Promise<void | ApplicationError>
-    {
+    public async restoreCustomer(tenantId: TenantId, customerId: string): Promise<void | ApplicationError> {
         try {
-            await this.db.orm.public.Customers.where({ id: customerId })
-                                              .update({ deletedAt: null })
+            await this.db.orm.public.Customers
+                .where({ id: customerId, tenantId })
+                .update({ deletedAt: null });
         } catch {
-            return new ApplicationError(503, `Não foi possível restaurar o usuário de ID ${customerId}`)
+            return new ApplicationError(503, `Não foi possível restaurar o usuário de ID ${customerId}`);
         }
     }
 
-    public async permanentDeleteCustomer(customerId: string): Promise<boolean | ApplicationError>
-    {
+    public async permanentDeleteCustomer(
+        tenantId: TenantId,
+        customerId: string
+    ): Promise<boolean | ApplicationError> {
         try {
-            await this.addressModel.deleteAddress(customerId)
-            await this.db.orm.public.Customers.where({ id: customerId }).delete()
+            const customer = await this.db.orm.public.Customers
+                .where({ id: customerId, tenantId })
+                .where((record) => record.deletedAt.isNotNull())
+                .first();
+            if (!customer) return false;
+
+            await this.db.transaction(async (tx) => {
+                await tx.orm.public.Addresses
+                    .where({ customerId: customer.id })
+                    .deleteAll();
+                await tx.orm.public.Customers
+                    .where({ id: customer.id, tenantId })
+                    .delete();
+            });
 
             return true;
         } catch {
-            return new ApplicationError(503, `Não foi possível deletar o usuário de ID ${customerId}`)
+            return new ApplicationError(503, `Não foi possível deletar o usuário de ID ${customerId}`);
         }
     }
 
-    // Verifies if the document is already registered in the database
-    public async isDocumentUnique(customerDocument: string): Promise<boolean>
-    {
+    public async isDocumentUnique(tenantId: TenantId, customerDocument: string): Promise<boolean> {
         const customer = await this.db.orm.public.Customers
-            .where({ document: this.toVarchar(customerDocument, 14) })
+            .where({
+                tenantId,
+                document: this.toVarchar(customerDocument, 14)
+            })
             .first();
 
         return !customer;
     }
 
-    public async isDocumentInTheBin(customerDocument: string): Promise<boolean | ApplicationError>
-    {
+    public async isDocumentInTheBin(
+        tenantId: TenantId,
+        customerDocument: string
+    ): Promise<boolean | ApplicationError> {
         try {
             const customer = await this.db.orm.public.Customers
-                .where({ document: this.toVarchar(customerDocument, 14) })
-                .where((customer) => customer.deletedAt.isNotNull())
-                .first()
-            
-            if (!customer) {
-                return false;
-            }
+                .where({
+                    tenantId,
+                    document: this.toVarchar(customerDocument, 14)
+                })
+                .where((record) => record.deletedAt.isNotNull())
+                .first();
 
-            return true;
+            return customer !== null;
         } catch {
-            return new ApplicationError(503, `Ocorreu um erro ao retornar o documento do usuário.`)
+            return new ApplicationError(503, "Ocorreu um erro ao retornar o documento do usuário.");
         }
     }
 
-    public async isEmailRegistered(userEmail: string): Promise<boolean>
-    {
-        const response = await this.db.orm.public.Customers
-            .where({ email: this.toVarchar(userEmail, 254) })
+    public async isEmailRegistered(tenantId: TenantId, userEmail: string): Promise<boolean> {
+        const customer = await this.db.orm.public.Customers
+            .where({
+                tenantId,
+                email: this.toVarchar(userEmail, 254)
+            })
             .first();
 
-        return !!response;
+        return customer !== null;
     }
 
-    public async getCustomer(id: string): Promise<CustomerWithAddress | null | ApplicationError>
-    {
-        const customer = await this.db.orm.public.Customers.where({
-            id,
-            deletedAt: null
-         }).first();
+    public async getCustomer(
+        tenantId: TenantId,
+        id: string
+    ): Promise<CustomerWithAddress | null | ApplicationError> {
+        const customer = await this.db.orm.public.Customers
+            .where({ id, tenantId, deletedAt: null })
+            .first();
+        if (!customer) return null;
 
-        if (!customer) {
-            return null;
-        }
-
-        const address = await this.addressModel.getAddress(customer.id);
-
-        return { customer, address };
+        return {
+            customer,
+            address: await this.addressModel.getAddress(customer.id)
+        };
     }
 
-    public async getAllCustomers(): Promise<CustomerWithAddress[] | ApplicationError>
-    {
-        const [customers, addresses] = await Promise.all([
-            this.db.orm.public.Customers.where({ deletedAt: null}).all(),
-            this.addressModel.getAllAddresses()
-        ]);
+    public async getAllCustomers(tenantId: TenantId): Promise<CustomerWithAddress[] | ApplicationError> {
+        const customers = await this.db.orm.public.Customers
+            .where({ tenantId, deletedAt: null })
+            .all();
+        const addresses = await this.addressModel.getAllAddresses(customers.map(({ id }) => id));
         const addressesByCustomerId = new Map(addresses.map((address) => [address.customerId, address]));
 
         return customers.map((customer) => ({
@@ -201,27 +219,27 @@ export class CustomerModel extends Model {
         }));
     }
 
-    public async getDeletedCustomer(customerId: string): Promise<Models.public_Customers | null | ApplicationError>
-    {
+    public async getDeletedCustomer(
+        tenantId: TenantId,
+        customerId: string
+    ): Promise<Models.public_Customers | null | ApplicationError> {
         try {
             return await this.db.orm.public.Customers
-                .where({ id: customerId })
+                .where({ id: customerId, tenantId })
                 .where((customer) => customer.deletedAt.isNotNull())
                 .first();
         } catch {
-            return new ApplicationError(503, `Ocorreu um erro ao retornar o usuário.`);
+            return new ApplicationError(503, "Ocorreu um erro ao retornar o usuário.");
         }
     }
 
-    public async getAllDeletedCustomers(): Promise<CustomerWithAddress[] | ApplicationError>
-    {
+    public async getAllDeletedCustomers(tenantId: TenantId): Promise<CustomerWithAddress[] | ApplicationError> {
         try {
-            const [customers, addresses] = await Promise.all([
-                this.db.orm.public.Customers
-                    .where((customer) => customer.deletedAt.isNotNull())
-                    .all(),
-                this.addressModel.getAllAddresses()
-            ]);
+            const customers = await this.db.orm.public.Customers
+                .where({ tenantId })
+                .where((customer) => customer.deletedAt.isNotNull())
+                .all();
+            const addresses = await this.addressModel.getAllAddresses(customers.map(({ id }) => id));
             const addressesByCustomerId = new Map(addresses.map((address) => [address.customerId, address]));
 
             return customers.map((customer) => ({
@@ -229,7 +247,7 @@ export class CustomerModel extends Model {
                 address: addressesByCustomerId.get(customer.id) ?? null
             }));
         } catch {
-            return new ApplicationError(503, `Ocorreu um erro ao retornar usuários.`);
+            return new ApplicationError(503, "Ocorreu um erro ao retornar usuários.");
         }
     }
 }

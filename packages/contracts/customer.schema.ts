@@ -49,13 +49,13 @@ export const customerIdentitySchema = z.discriminatedUnion('personType', [
       name: customerFields.name,
       document: individualCustomerFields.document,
       birthDate: birthDateSchema
-    }),
+    }).strict(),
     z.object({
       personType: z.literal('COMPANY'),
       name: customerFields.name,
       document: companyCustomerFields.document,
       tradeName: companyCustomerFields.tradeName
-    })
+    }).strict()
 ])
 
 export const customerContactSchema = z.object({
@@ -70,13 +70,13 @@ const customerDocumentUpdateSchema = z.string("O documento inserido precisa ser 
     .transform((document) => document.replace(/\D/g, ''))
 
 export const customerRegistrationSchema = z.discriminatedUnion('personType', [
-    z.object(individualCustomerFields).loose(),
-    z.object(companyCustomerFields).loose()
+    z.object(individualCustomerFields).strict(),
+    z.object(companyCustomerFields).strict()
 ])
 
 export const customersRequestSchema = z.discriminatedUnion('personType', [
-    z.object({ ...individualCustomerFields, address: addressRequestSchema }).loose(),
-    z.object({ ...companyCustomerFields, address: addressRequestSchema }).loose()
+    z.object({ ...individualCustomerFields, address: addressRequestSchema }).strict(),
+    z.object({ ...companyCustomerFields, address: addressRequestSchema }).strict()
 ])
 
 const customerResponseFields = {
@@ -111,7 +111,7 @@ export const customerUpdateSchema = z.object({
     birthDate: birthDateSchema.nullable(),
     email: customerFields.email.nullable(),
     address: addressUpdateSchema
-}).partial()
+}).partial().strict()
 
 export type CustomerRegistration = output<typeof customerRegistrationSchema>
 export type CustomerResponse = output<typeof customersResponseSchema>
