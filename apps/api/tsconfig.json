@@ -13,6 +13,7 @@
     "moduleResolution": "bundler",
     "outDir": "dist",
     "rootDir": "./../../",
+    "rewriteRelativeImportExtensions": true,
     "sourceMap": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
@@ -23,7 +24,7 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "allowImportingTsExtensions": true,
-    "noEmit": true,
+    "noEmit": false,
     "resolveJsonModule": true
   },
   "include": ["./src/**/*.ts", "./config/**/*.ts", "./../../packages/*.ts"]
