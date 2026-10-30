@@ -15,7 +15,6 @@ services:
         - private_net
     healthcheck:
         test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
-        interval: 10s
         timeout: 5s
         retries: 5
         start_period: 15s
@@ -32,21 +31,17 @@ services:
         NODE_ENV: ${NODE_ENV:-production}
     ports:
         - "127.0.0.1:3333:3333"
-    volumes:
-        - ./apps/api:/cadastro_clientes/apps/api
-        - ./packages:/cadastro_clientes/packages
     depends_on:
         db:
             condition: service_healthy
     networks:
         - public_net
         - private_net
-    command: sh -c 'npx prisma db migrate && npx prisma db update && npm run dev' # Aplica as migrações antes de iniciar a aplicação
+    command: sh -c 'npx prisma db migrate && npx prisma db update && npm start' # Inicia a versão compilada após aplicar as migrações
     healthcheck:
         test: ["CMD", "node", "-e", "fetch('http://localhost:3333/health').then(res => res.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"] # Verifica o status de health da API
-        interval: 10s
         timeout: 5s
-        retries: 3
+        retries: 2
         start_period: 10s
 
   web:
