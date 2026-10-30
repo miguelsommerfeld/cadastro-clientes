@@ -17,7 +17,7 @@ export default async (fastify: FastifyInstance) => {
         },
     }, async (req, res) => {
         try {
-            await db.orm.public.Customers.limit(1).all();
+            await db.orm.public.Tenants.limit(1).all();
 
             return {
                 status: 200

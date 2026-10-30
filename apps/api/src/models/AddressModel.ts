@@ -15,8 +15,10 @@ export class AddressModel extends Model
             customerId: this.toVarchar(customerId, customerId.length),
             zipCode: this.toVarchar(addressData.zipCode, 8),
             street: this.toVarchar(addressData.street, 150),
-            number: typeof addressData.number === 'string' ? this.toVarchar(addressData.number, 10) : null,
-            complement: this.toVarchar(addressData.complement, 100),
+            number: this.toVarchar(addressData.number ?? "S/N", 10),
+            complement: addressData.complement === null
+                ? null
+                : this.toVarchar(addressData.complement, 100),
             district: this.toVarchar(addressData.district, 100),
             city: this.toVarchar(addressData.city, 100),
             state: this.toVarchar(addressData.state, 2)
@@ -40,7 +42,7 @@ export class AddressModel extends Model
             .where({ customerId })
             .update({
                 number: addressData.number === null
-                    ? null
+                    ? this.toVarchar("S/N", 10)
                     : this.toVarchar(addressData.number, 10)
             });
     }
@@ -50,8 +52,11 @@ export class AddressModel extends Model
         return this.db.orm.public.Addresses.where({ customerId }).deleteAll();
     }
 
-    public getAllAddresses()
+    public getAllAddresses(customerIds: string[])
     {
-        return this.db.orm.public.Addresses.all();
+        if (customerIds.length === 0) return Promise.resolve([]);
+        return this.db.orm.public.Addresses
+            .where((address) => address.customerId.in(customerIds))
+            .all();
     }
 }

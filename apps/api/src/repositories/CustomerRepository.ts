@@ -2,6 +2,7 @@ import { ApplicationError } from "@/errors/application.error";
 import { CustomerModel } from "@/models/CustomerModel";
 import { AddressRequestSchema } from "@packages/contracts/address.schema";
 import type { CustomerRegistration, CustomerUpdateData } from "@packages/contracts/customer.schema";
+import type { TenantId } from "@packages/contracts/auth.schema";
 
 export class CustomerRepository
 {
@@ -12,63 +13,66 @@ export class CustomerRepository
         this.model = model;
     }
 
-    public registerCustomer(customerData: CustomerRegistration, addressData: AddressRequestSchema)
+    public registerCustomer(tenantId: TenantId, customerData: CustomerRegistration, addressData: AddressRequestSchema)
     {
-        return this.model.registerCustomer(customerData, addressData);
+        return this.model.registerCustomer(tenantId, customerData, addressData);
     }
 
-    public async updateCustomer(id: string, customerData: CustomerUpdateData)
+    public async updateCustomer(tenantId: TenantId, id: string, customerData: CustomerUpdateData)
     {
-        await this.model.updateCustomer(id, customerData);
+        await this.model.updateCustomer(tenantId, id, customerData);
     }
 
-    public async deleteCustomer(customerId: string)
+    public async deleteCustomer(tenantId: TenantId, customerId: string)
     {
-        return this.model.deleteCustomer(customerId);
+        return this.model.deleteCustomer(tenantId, customerId);
     }
 
-    public async restoreCustomer(customerId: string)
+    public async restoreCustomer(tenantId: TenantId, customerId: string)
     {
-        return this.model.restoreCustomer(customerId);
+        return this.model.restoreCustomer(tenantId, customerId);
     }
 
-    public async permanentDeleteCustomer(customerId: string)
+    public async permanentDeleteCustomer(tenantId: TenantId, customerId: string)
     {
-        return await this.model.permanentDeleteCustomer(customerId);
+        return await this.model.permanentDeleteCustomer(tenantId, customerId);
     }
 
-    public isDocumentUnique(customerDocument: string): Promise<boolean>
+    public isDocumentUnique(tenantId: TenantId, customerDocument: string): Promise<boolean>
     {
-        return this.model.isDocumentUnique(customerDocument);
+        return this.model.isDocumentUnique(tenantId, customerDocument);
     }
 
-    public async isDocumentInTheBin(customerDocument: string): Promise<boolean | ApplicationError>
+    public async isDocumentInTheBin(tenantId: TenantId, customerDocument: string): Promise<boolean | ApplicationError>
     {
-        return await this.model.isDocumentInTheBin(customerDocument);
+        return await this.model.isDocumentInTheBin(tenantId, customerDocument);
     }
 
-    public async isEmailRegistered(userEmail: string): Promise<boolean>
+    public async isEmailRegistered(tenantId: TenantId, userEmail: string): Promise<boolean>
     {
-        return await this.model.isEmailRegistered(userEmail);
+        return await this.model.isEmailRegistered(tenantId, userEmail);
     }
 
-    public async getAllCustomers(): ReturnType<CustomerModel["getAllCustomers"]>
+    public async getAllCustomers(tenantId: TenantId): ReturnType<CustomerModel["getAllCustomers"]>
     {
-        return this.model.getAllCustomers();
+        return this.model.getAllCustomers(tenantId);
     }
 
-    public async getCustomer(id: string): ReturnType<CustomerModel["getCustomer"]>
+    public async getCustomer(tenantId: TenantId, id: string): ReturnType<CustomerModel["getCustomer"]>
     {
-        return await this.model.getCustomer(id);
+        return await this.model.getCustomer(tenantId, id);
     }
 
-    public async getDeletedCustomer(customerId: string): ReturnType<CustomerModel["getDeletedCustomer"]>
+    public async getDeletedCustomer(
+        tenantId: TenantId,
+        customerId: string
+    ): ReturnType<CustomerModel["getDeletedCustomer"]>
     {
-        return await this.model.getDeletedCustomer(customerId);
+        return await this.model.getDeletedCustomer(tenantId, customerId);
     }
 
-    public async getAllDeletedCustomers(): ReturnType<CustomerModel["getAllDeletedCustomers"]>
+    public async getAllDeletedCustomers(tenantId: TenantId): ReturnType<CustomerModel["getAllDeletedCustomers"]>
     {
-        return this.model.getAllDeletedCustomers();
+        return this.model.getAllDeletedCustomers(tenantId);
     }
 }
