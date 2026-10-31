@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { Temporal } from "temporal-polyfill";
 import type { Models } from "../../prisma/contract";
 import { REFRESH_TOKEN_TTL_SECONDS } from "@/constants/auth";
-import { Model } from "./Model";
+import { Model } from "./model";
 
 export class AuthModel extends Model {
     public async register(

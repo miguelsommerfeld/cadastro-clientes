@@ -1,5 +1,5 @@
 import type { Customer, CustomerSortKey, SortOrder } from '@/types/customer'
-import { digits, normalize } from '@/utils/customerPresentation'
+import { digits, normalize } from '@/utils/customer.presentation'
 
 export function filterAndSortCustomers(
   customers: Customer[],

@@ -4,7 +4,7 @@ import type {
 } from "@packages/contracts/address.schema";
 import { randomUUID } from 'node:crypto'
 import type { Models } from '../../prisma/contract';
-import { Model } from './Model'
+import { Model } from './model'
 
 export class AddressModel extends Model
 {

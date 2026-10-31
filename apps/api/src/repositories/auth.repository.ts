@@ -1,4 +1,4 @@
-import { AuthModel } from "@/models/AuthModel";
+import { AuthModel } from "@/models/auth.model";
 
 export class AuthRepository {
     constructor(private readonly model: AuthModel) {}

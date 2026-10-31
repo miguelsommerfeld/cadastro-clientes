@@ -10,8 +10,8 @@ import type {
 import { rolePermissions, tenantIdSchema } from "@packages/contracts/auth.schema";
 import type { Models } from "../../prisma/contract";
 import { REFRESH_TOKEN_TTL_SECONDS } from "@/constants/auth";
-import { AuthRepository } from "@/repositories/AuthRepository";
-import { AuthTokenService } from "@/services/AuthTokenService";
+import { AuthRepository } from "@/repositories/auth.repository";
+import { AuthTokenService } from "@/services/auth.token.service";
 
 const GENERIC_LOGIN_ERROR = "E-mail ou senha inválidos";
 

@@ -1,5 +1,5 @@
 import { ApplicationError } from "@/errors/application.error";
-import { CustomerRepository } from "@/repositories/CustomerRepository";
+import { CustomerRepository } from "@/repositories/customer.repository";
 import type { AddressRequestSchema } from "@packages/contracts/address.schema";
 import type {
     CustomerRegistration,
@@ -9,8 +9,8 @@ import type {
 import type { DocumentValidation } from '@packages/contracts/document.schema'
 import type { TenantId } from "@packages/contracts/auth.schema";
 import { cnpj, cpf } from 'cpf-cnpj-validator'
-import { Service, type ApplicationErrorResponse } from "./Service";
-import type { CustomerWithAddress } from "@/models/CustomerModel";
+import { Service, type ApplicationErrorResponse } from "./service";
+import type { CustomerWithAddress } from "@/models/customer.model";
 
 export class CustomerService extends Service
 {

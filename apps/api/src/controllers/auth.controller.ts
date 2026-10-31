@@ -3,7 +3,7 @@ import type {
     AuthRequest,
     LoginRequest
 } from "@packages/contracts/auth.schema";
-import { AuthService } from "@/services/AuthService";
+import { AuthService } from "@/services/auth.service";
 
 export class AuthController {
     constructor(private readonly service: AuthService) {}

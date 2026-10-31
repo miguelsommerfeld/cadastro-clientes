@@ -1,5 +1,5 @@
 import { ApplicationError } from "@/errors/application.error";
-import { CustomerModel } from "@/models/CustomerModel";
+import { CustomerModel } from "@/models/customer.model";
 import { AddressRequestSchema } from "@packages/contracts/address.schema";
 import type { CustomerRegistration, CustomerUpdateData } from "@packages/contracts/customer.schema";
 import type { TenantId } from "@packages/contracts/auth.schema";

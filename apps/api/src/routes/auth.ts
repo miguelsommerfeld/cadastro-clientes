@@ -12,7 +12,7 @@ import {
     ACCESS_TOKEN_TTL_SECONDS,
     REFRESH_TOKEN_TTL_SECONDS
 } from "@/constants/auth";
-import { AuthServiceError } from "@/services/AuthService";
+import { AuthServiceError } from "@/services/auth.service";
 import type { FastifyTypedInstance } from "../../config/dependencies";
 
 const authErrorSchema = z.object({ message: z.string() });
