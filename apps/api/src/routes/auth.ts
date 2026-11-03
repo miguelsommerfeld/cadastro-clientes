@@ -34,8 +34,7 @@ const authRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedIn
             response: {
                 201: authSessionUserSchema,
                 400: authErrorSchema,
-                409: authErrorSchema,
-                503: authErrorSchema
+                409: authErrorSchema
             }
         }
     }, async (request, reply) => {
@@ -70,8 +69,7 @@ const authRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedIn
                 200: authSessionUserSchema,
                 400: authErrorSchema,
                 401: authErrorSchema,
-                429: authErrorSchema,
-                503: authErrorSchema
+                429: authErrorSchema
             }
         }
     }, async (request, reply) => {
@@ -90,7 +88,6 @@ const authRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedIn
             response: {
                 200: authSessionUserSchema,
                 401: authErrorSchema,
-                503: authErrorSchema
             }
         }
     }, async (request, reply) => {
@@ -121,8 +118,7 @@ const authRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedIn
     server.post("/auth/logout", {
         schema: {
             response: {
-                204: z.null(),
-                503: authErrorSchema
+                204: z.null()
             }
         }
     }, async (request, reply) => {
@@ -145,29 +141,29 @@ const authRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedIn
         return reply.code(204).send(null);
     });
 
-    server.get("/auth/session", {
+    server.get("/auth/me", {
         schema: {
             response: {
-                200: authSessionUserSchema.nullable(),
-                503: authErrorSchema
+                200: authSessionUserSchema,
+                204: z.null(),
             }
         }
     }, async (request, reply) => {
         const accessToken = request.cookies.access_token;
-        if (!accessToken) return reply.code(200).send(null);
+        if (!accessToken) return reply.code(204).send(null);
 
-        let claims;
         try {
-            claims = await server.authController.verifyAccessToken(accessToken);
+            const claims = await server.authController.verifyAccessToken(accessToken);
+            const session = await server.authController.getSession(claims);
+
+            if (session && "code" in session) return sendAuthError(reply, session);
+            if (session === null) return reply.code(204).send(null);
+
+            return reply.code(200).send(session);
         } catch (error) {
             request.log.info({ err: error }, "Returning an empty session for an invalid access token");
-            return reply.code(200).send(null);
+            return reply.code(204).send(null);
         }
-
-        const session = await server.authController.getSession(claims);
-        if (session && "code" in session) return sendAuthError(reply, session);
-
-        return reply.code(200).send(session);
     });
 };
 

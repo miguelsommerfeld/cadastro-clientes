@@ -13,17 +13,19 @@ import { FastifyBaseLogger, FastifyInstance, RawReplyDefaultExpression, RawReque
 import { ZodTypeProvider } from '@fastify/type-provider-zod';
 
 export default fp(async (server) => {
+    // Auth Dependencies
+    const authModel = new AuthModel();
+    const authRepository = new AuthRepository(authModel);
+    const authTokenService = new AuthTokenService(server);
+    const authService = new AuthService(authRepository, authTokenService);
+    const authController = new AuthController(authService);
+
     // Customer Dependencies
     const addressModel = new AddressModel();
     const customerModel: CustomerModel = new CustomerModel(addressModel);
     const customerRepository: CustomerRepository = new CustomerRepository(customerModel);
-    const customerService: CustomerService = new CustomerService(customerRepository);
+    const customerService: CustomerService = new CustomerService(customerRepository, authService);
     const customerController: CustomerController = new CustomerController(customerService);
-    const authModel = new AuthModel();
-    const authRepository = new AuthRepository(authModel);
-    const authTokenService = new AuthTokenService(server);
-    const authService = new AuthService(authRepository, authTokenService, server.log);
-    const authController = new AuthController(authService);
 
     server.decorate('customerController', customerController);
     server.decorate('authController', authController);

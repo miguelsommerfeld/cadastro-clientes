@@ -31,6 +31,8 @@ export class AuthModel extends Model {
             name: this.toVarchar(data.username, 100),
             email: this.toVarchar(data.email, 254),
             passwordHash: this.toVarchar(data.passwordHash, 253),
+            isActive: true,
+            lastLoginAt: now,
             createdAt: now,
             updatedAt: now
         } satisfies Models.public_Users;

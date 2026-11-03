@@ -25,6 +25,7 @@ export class CustomerModel extends Model {
 
     public async registerCustomer(
         tenantId: TenantId,
+        userId: string,
         customerData: CustomerRegistration,
         addressData: AddressRequestSchema
     ) {
@@ -44,8 +45,11 @@ export class CustomerModel extends Model {
             email: this.toVarchar(customerData.email, 254),
             phone: this.toVarchar(customerData.phone, 11),
             createdAt: now,
+            createdBy: userId,
             updatedAt: now,
-            deletedAt: null
+            updatedBy: userId,
+            deletedAt: null,
+            deletedBy: null
         } satisfies Models.public_Customers;
 
         const savedCustomer = await this.db.orm.public.Customers.create(customer);
@@ -56,12 +60,13 @@ export class CustomerModel extends Model {
 
     public async updateCustomer(
         tenantId: TenantId,
-        id: string,
+        customerId: string,
+        userId: string,
         customerData: CustomerUpdateData
     ): Promise<void> {
         const updates: Partial<Pick<
             Models.public_Customers,
-            "document" | "name" | "tradeName" | "birthDate" | "email" | "phone"
+            "document" | "name" | "tradeName" | "birthDate" | "email" | "phone" | "updatedBy"
         >> = {};
 
         if (customerData.document !== undefined) {
@@ -91,34 +96,35 @@ export class CustomerModel extends Model {
 
         if (Object.keys(updates).length > 0) {
             await this.db.orm.public.Customers
-                .where({ id, tenantId })
+                .where({ id: customerId, tenantId })
                 .update({
                     ...updates,
-                    updatedAt: Temporal.Now.instant()
+                    updatedAt: Temporal.Now.instant(),
+                    updatedBy: userId
                 });
         }
 
         if (customerData.address !== undefined) {
-            await this.addressModel.updateAddress(id, customerData.address);
+            await this.addressModel.updateAddress(customerId, customerData.address);
         }
     }
 
-    public async deleteCustomer(tenantId: TenantId, customerId: string): Promise<void | ApplicationError> {
+    public async deleteCustomer(tenantId: TenantId, userId: string, customerId: string): Promise<void | ApplicationError> {
         try {
             const now = Temporal.Now.instant();
             await this.db.orm.public.Customers
                 .where({ id: customerId, tenantId })
-                .update({ updatedAt: now, deletedAt: now });
+                .update({ updatedAt: now, deletedAt: now, deletedBy: userId });
         } catch {
             return new ApplicationError(503, `Não foi possível adicionar o usuário de ID ${customerId} à lixeira`);
         }
     }
 
-    public async restoreCustomer(tenantId: TenantId, customerId: string): Promise<void | ApplicationError> {
+    public async restoreCustomer(tenantId: TenantId, userId: string, customerId: string): Promise<void | ApplicationError> {
         try {
             await this.db.orm.public.Customers
                 .where({ id: customerId, tenantId })
-                .update({ deletedAt: null });
+                .update({ updatedAt: Temporal.Now.instant(), deletedAt: null, updatedBy: userId });
         } catch {
             return new ApplicationError(503, `Não foi possível restaurar o usuário de ID ${customerId}`);
         }

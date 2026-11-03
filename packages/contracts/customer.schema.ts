@@ -87,8 +87,11 @@ const customerResponseFields = {
     phone: z.string(),
     address: addressResponseSchema.optional(),
     createdAt: z.iso.datetime(),
+    createdBy: z.string().nullable(),
     updatedAt: z.iso.datetime().optional(),
-    deletedAt: z.iso.datetime().nullable()
+    updatedBy: z.string().nullable(),
+    deletedAt: z.iso.datetime().nullable(),
+    deletedBy: z.string().nullable()
 }
 
 export const customersResponseSchema = z.discriminatedUnion('personType', [

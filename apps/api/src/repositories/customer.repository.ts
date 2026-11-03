@@ -13,24 +13,24 @@ export class CustomerRepository
         this.model = model;
     }
 
-    public registerCustomer(tenantId: TenantId, customerData: CustomerRegistration, addressData: AddressRequestSchema)
+    public registerCustomer(tenantId: TenantId, userId: string, customerData: CustomerRegistration, addressData: AddressRequestSchema)
     {
-        return this.model.registerCustomer(tenantId, customerData, addressData);
+        return this.model.registerCustomer(tenantId, userId, customerData, addressData);
     }
 
-    public async updateCustomer(tenantId: TenantId, id: string, customerData: CustomerUpdateData)
+    public async updateCustomer(tenantId: TenantId, userId: string, customerId: string, customerData: CustomerUpdateData)
     {
-        await this.model.updateCustomer(tenantId, id, customerData);
+        await this.model.updateCustomer(tenantId, userId, customerId, customerData);
     }
 
-    public async deleteCustomer(tenantId: TenantId, customerId: string)
+    public async deleteCustomer(tenantId: TenantId, userId: string, customerId: string)
     {
-        return this.model.deleteCustomer(tenantId, customerId);
+        return this.model.deleteCustomer(tenantId, userId, customerId);
     }
 
-    public async restoreCustomer(tenantId: TenantId, customerId: string)
+    public async restoreCustomer(tenantId: TenantId, userId: string, customerId: string)
     {
-        return this.model.restoreCustomer(tenantId, customerId);
+        return this.model.restoreCustomer(tenantId, userId, customerId);
     }
 
     public async permanentDeleteCustomer(tenantId: TenantId, customerId: string)
