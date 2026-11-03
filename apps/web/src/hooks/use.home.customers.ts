@@ -4,8 +4,8 @@ import {
   moveToTrash,
   permanentlyDeleteCustomer,
   restoreCustomer,
-} from '@/services/customerService'
-import { filterAndSortCustomers } from '@/utils/customerSearch'
+} from '@/services/customer.service'
+import { filterAndSortCustomers } from '@/utils/customer.search'
 import type {
   Customer,
   CustomerAction,

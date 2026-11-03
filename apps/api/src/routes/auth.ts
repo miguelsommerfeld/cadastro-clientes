@@ -12,10 +12,20 @@ import {
     ACCESS_TOKEN_TTL_SECONDS,
     REFRESH_TOKEN_TTL_SECONDS
 } from "@/constants/auth";
-import { AuthServiceError } from "@/services/AuthService";
+import type { ApplicationErrorResponse } from "@/services/service";
 import type { FastifyTypedInstance } from "../../config/dependencies";
 
-const authErrorSchema = z.object({ message: z.string() });
+const authErrorSchema = z.object({
+    code: z.number().optional(),
+    message: z.string()
+});
+const authFieldLabels: Record<string, string> = {
+    tenantName: "Nome da empresa",
+    slug: "Identificador da empresa",
+    username: "Nome",
+    email: "E-mail",
+    password: "Senha"
+};
 const accessCookie = {
     httpOnly: true,
     sameSite: "strict" as const,
@@ -32,26 +42,41 @@ const refreshCookie = {
 };
 
 const authRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedInstance) {
+    server.setErrorHandler((error, _request, reply) => {
+        if (
+            typeof error === "object" &&
+            error !== null &&
+            "statusCode" in error &&
+            error.statusCode === 400
+        ) {
+            return reply.code(400).send({
+                code: 400,
+                message: formatValidationError(error)
+            });
+        }
+
+        return reply.send(error);
+    });
+
     server.post("/auth/register", {
         schema: {
             body: authRequestSchema,
             response: {
                 201: authSessionUserSchema,
                 400: authErrorSchema,
-                409: authErrorSchema
+                409: authErrorSchema,
+                503: authErrorSchema
             }
         }
     }, async (request, reply) => {
-        try {
-            const tokens = await server.authController.register(request.body);
+        const result = await server.authController.register(request.body);
 
-            reply.setCookie("access_token", tokens.accessToken, accessCookie);
-            reply.setCookie("refresh_token", tokens.refreshToken, refreshCookie);
+        if ("code" in result) return sendAuthError(reply, result);
 
-            return reply.code(201).send(tokens.user);
-        } catch (error) {
-            return sendAuthError(reply, error);
-        }
+        reply.setCookie("access_token", result.accessToken, accessCookie);
+        reply.setCookie("refresh_token", result.refreshToken, refreshCookie);
+
+        return reply.code(201).send(result.user);
     });
 
     server.post("/auth/login", {
@@ -75,27 +100,27 @@ const authRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedIn
                 200: authSessionUserSchema,
                 400: authErrorSchema,
                 401: authErrorSchema,
-                429: authErrorSchema
+                429: authErrorSchema,
+                503: authErrorSchema
             }
         }
     }, async (request, reply) => {
-        try {
-            const tokens = await server.authController.login(request.body);
+        const result = await server.authController.login(request.body);
 
-            reply.setCookie("access_token", tokens.accessToken, accessCookie);
-            reply.setCookie("refresh_token", tokens.refreshToken, refreshCookie);
+        if ("code" in result) return sendAuthError(reply, result);
 
-            return reply.code(200).send(tokens.user);
-        } catch (error) {
-            return sendAuthError(reply, error);
-        }
+        reply.setCookie("access_token", result.accessToken, accessCookie);
+        reply.setCookie("refresh_token", result.refreshToken, refreshCookie);
+
+        return reply.code(200).send(result.user);
     });
 
     server.post("/auth/refresh", {
         schema: {
             response: {
                 200: authSessionUserSchema,
-                401: authErrorSchema
+                401: authErrorSchema,
+                503: authErrorSchema
             }
         }
     }, async (request, reply) => {
@@ -104,29 +129,30 @@ const authRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedIn
         if (!refreshToken) {
             clearAuthCookies(reply);
 
-            return reply.code(401).send({ message: "Sessão inválida ou expirada" });
+            return reply.code(401).send({
+                code: 401,
+                message: "Sessão inválida ou expirada"
+            });
         }
 
-        try {
-            const tokens = await server.authController.refresh(refreshToken);
+        const result = await server.authController.refresh(refreshToken);
 
-            reply.setCookie("access_token", tokens.accessToken, accessCookie);
-            reply.setCookie("refresh_token", tokens.refreshToken, refreshCookie);
-
-            return reply.code(200).send(tokens.user);
-        } catch (error) {
-            if (error instanceof AuthServiceError) {
-                clearAuthCookies(reply);
-            }
-
-            return sendAuthError(reply, error);
+        if ("code" in result) {
+            if (result.code === 401) clearAuthCookies(reply);
+            return sendAuthError(reply, result);
         }
+
+        reply.setCookie("access_token", result.accessToken, accessCookie);
+        reply.setCookie("refresh_token", result.refreshToken, refreshCookie);
+
+        return reply.code(200).send(result.user);
     });
 
     server.post("/auth/logout", {
         schema: {
             response: {
-                204: z.null()
+                204: z.null(),
+                503: authErrorSchema
             }
         }
     }, async (request, reply) => {
@@ -141,7 +167,9 @@ const authRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedIn
             }
         }
 
-        await server.authController.logout(request.cookies.refresh_token, claims);
+        const result = await server.authController.logout(request.cookies.refresh_token, claims);
+        if (result && "code" in result) return sendAuthError(reply, result);
+
         clearAuthCookies(reply);
 
         return reply.code(204).send(null);
@@ -150,7 +178,8 @@ const authRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedIn
     server.get("/auth/session", {
         schema: {
             response: {
-                200: authSessionUserSchema.nullable()
+                200: authSessionUserSchema.nullable(),
+                503: authErrorSchema
             }
         }
     }, async (request, reply) => {
@@ -165,7 +194,10 @@ const authRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedIn
             return reply.code(200).send(null);
         }
 
-        return reply.code(200).send(await server.authController.getSession(claims));
+        const session = await server.authController.getSession(claims);
+        if (session && "code" in session) return sendAuthError(reply, session);
+
+        return reply.code(200).send(session);
     });
 };
 
@@ -176,12 +208,50 @@ function clearAuthCookies(reply: FastifyReply): void {
 
 function sendAuthError(
     reply: FastifyReply,
-    error: unknown
+    error: ApplicationErrorResponse
 ) {
-    if (error instanceof AuthServiceError) {
-        return reply.code(error.statusCode).send({ message: error.message });
+    return reply.code(error.code).send(error);
+}
+
+function formatValidationError(error: unknown): string {
+    if (
+        typeof error !== "object" ||
+        error === null ||
+        !("validation" in error) ||
+        !Array.isArray(error.validation)
+    ) {
+        return "Os dados enviados são inválidos.";
     }
-    throw error;
+
+    const messages = error.validation.flatMap((issue) => {
+        if (
+            typeof issue !== "object" ||
+            issue === null ||
+            !("instancePath" in issue) ||
+            typeof issue.instancePath !== "string" ||
+            !("message" in issue) ||
+            typeof issue.message !== "string"
+        ) {
+            return [];
+        }
+
+        const path = issue.instancePath.split("/").filter(Boolean);
+        const field = path.at(-1);
+        const label = field ? authFieldLabels[field] ?? field : "Dados";
+
+        if (issue.message.includes("received undefined")) {
+            return [`${label} é obrigatório.`];
+        }
+        if (issue.message === "Invalid email address") {
+            return ["E-mail inválido."];
+        }
+
+        return [`${label}: ${issue.message}`];
+    });
+
+    return messages.length > 0
+        ? messages.join(" ")
+        : "Os dados enviados são inválidos.";
 }
 
 export default authRoutes;

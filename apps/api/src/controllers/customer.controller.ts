@@ -1,4 +1,4 @@
-import { CustomerService } from "@/services/CustomerService";
+import { CustomerService } from "@/services/customer.service";
 import type { AddressRequestSchema } from "@packages/contracts/address.schema";
 import type {
     CustomerRegistration,

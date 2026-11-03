@@ -10,8 +10,8 @@ import type {
 import type { TenantId } from "@packages/contracts/auth.schema";
 import type { Models } from "../../prisma/contract";
 import { ApplicationError } from "@/errors/application.error";
-import { AddressModel } from "@/models/AddressModel";
-import { Model } from "./Model";
+import { AddressModel } from "@/models/address.model";
+import { Model } from "./model";
 
 export type CustomerWithAddress = {
     customer: Models.public_Customers;

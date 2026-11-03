@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
-import { lookupAddressByZipCode } from '@/services/addressService'
+import { lookupAddressByZipCode } from '@/services/address.service'
 import {
   formatCnpj,
   formatCpf,
   formatPhoneInput,
   formatZipCode,
-} from '@/utils/inputMasks'
+} from '@/utils/input.masks'
 import type { CustomerDraft } from '@/types/customer'
 
 export type CustomerFormSection = 'identity' | 'contact' | 'address' | 'all'

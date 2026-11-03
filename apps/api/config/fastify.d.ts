@@ -1,5 +1,5 @@
-import { CustomerController } from '@/controllers/CustomerController';
-import type { AuthController } from '@/controllers/AuthController';
+import { CustomerController } from '@/controllers/customer.controller';
+import type { AuthController } from '@/controllers/auth.controller';
 import type { AccessTokenClaims, Permission } from '@packages/contracts/auth.schema';
 
 declare module "fastify" {

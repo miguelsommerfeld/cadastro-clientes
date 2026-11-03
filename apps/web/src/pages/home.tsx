@@ -12,7 +12,7 @@ import { CustomerListToolbar } from '@/components/home/customer-list-toolbar'
 import { HomeHeader } from '@/components/home/home-header'
 import { HomeNavigation } from '@/components/home/home-navigation'
 import { HomeOverview } from '@/components/home/home-overview'
-import { useHomeCustomers } from '@/hooks/useHomeCustomers'
+import { useHomeCustomers } from '@/hooks/use.home.customers'
 import type { Customer, CustomerAction, CustomerView } from '@/types/customer'
 
 export default function HomePage({ view }: { view: CustomerView }) {

@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { Temporal } from "temporal-polyfill";
 import type { Models } from "../../prisma/contract";
 import { REFRESH_TOKEN_TTL_SECONDS } from "@/constants/auth";
-import { Model } from "./Model";
+import { Model } from "./model";
 
 export class AuthModel extends Model {
     public async register(
@@ -67,6 +67,12 @@ export class AuthModel extends Model {
         return this.db.orm.public.Tenants.where({ id }).first();
     }
 
+    public findTenantBySlug(slug: string) {
+        return this.db.orm.public.Tenants
+            .where({ slug: this.toVarchar(slug, slug.length) })
+            .first();
+    }
+
     public createSession(session: {
         id: string;
         userId: string;
@@ -92,6 +98,10 @@ export class AuthModel extends Model {
         }
 
         return session;
+    }
+
+    public findSessionById(sessionId: string) {
+        return this.db.orm.public.Sessions.where({ id: sessionId }).first();
     }
 
     public async rotateSession(
@@ -128,11 +138,11 @@ export class AuthModel extends Model {
         });
     }
 
-    public async revokeSessionByRefreshTokenHash(refreshTokenHash: string) {
+    public async revokeSessionByRefreshTokenHash(refreshTokenHash: string): Promise<boolean> {
         const session = await this.db.orm.public.Sessions
             .where({ refreshTokenHash: this.toVarchar(refreshTokenHash, 253) })
             .first();
-        if (!session || session.revokedAt !== null) return;
+        if (!session || session.revokedAt !== null) return false;
 
         await this.db.orm.public.Sessions
             .where({
@@ -141,6 +151,7 @@ export class AuthModel extends Model {
                 revokedAt: null
             })
             .update({ revokedAt: Temporal.Now.instant() });
+        return true;
     }
 
     public async revokeSessionById(sessionId: string) {

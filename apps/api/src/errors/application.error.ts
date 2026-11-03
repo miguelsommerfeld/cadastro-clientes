@@ -1,4 +1,4 @@
-export type ApplicationErrorCode = 403 | 404 | 503;
+export type ApplicationErrorCode = 400 | 401 | 403 | 404 | 409 | 503;
 
 export class ApplicationError
 {

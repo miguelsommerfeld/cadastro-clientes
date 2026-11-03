@@ -1,4 +1,4 @@
-import { AuthModel } from "@/models/AuthModel";
+import { AuthModel } from "@/models/auth.model";
 
 export class AuthRepository {
     constructor(private readonly model: AuthModel) {}
@@ -19,12 +19,20 @@ export class AuthRepository {
         return this.model.findTenantById(id);
     }
 
+    public findTenantBySlug(slug: string) {
+        return this.model.findTenantBySlug(slug);
+    }
+
     public createSession(session: Parameters<AuthModel["createSession"]>[0]) {
         return this.model.createSession(session);
     }
 
     public findValidSessionByRefreshTokenHash(refreshTokenHash: string) {
         return this.model.findValidSessionByRefreshTokenHash(refreshTokenHash);
+    }
+
+    public findSessionById(sessionId: string) {
+        return this.model.findSessionById(sessionId);
     }
 
     public rotateSession(

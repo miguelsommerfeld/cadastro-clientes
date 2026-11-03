@@ -1,5 +1,5 @@
 import type { Customer, CustomerDraft } from '@/types/customer'
-import { apiRoutes, request } from '@/services/apiClient'
+import { apiRoutes, request } from '@/services/api.client'
 
 export function getCustomers(trash = false) {
   const url = trash ? apiRoutes.deletedCustomers : apiRoutes.customers

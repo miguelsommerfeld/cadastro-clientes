@@ -7,15 +7,15 @@ import {
   type CustomerFormField,
   type CustomerFormSection,
 } from '@/components/home/customer-form-fields'
-import { createCustomer, getCustomer, updateCustomer } from '@/services/customerService'
-import { ApiError } from '@/services/apiClient'
+import { createCustomer, getCustomer, updateCustomer } from '@/services/customer.service'
+import { ApiError } from '@/services/api.client'
 import type { Customer, CustomerDraft } from '@/types/customer'
 import {
   formatCnpj,
   formatCpf,
   formatPhoneInput,
   formatZipCode,
-} from '@/utils/inputMasks'
+} from '@/utils/input.masks'
 
 const wizardStep = {
   identity: 0,

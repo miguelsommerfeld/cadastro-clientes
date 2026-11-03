@@ -1,14 +1,14 @@
 import fp from 'fastify-plugin';
-import { AddressModel } from '@/models/AddressModel';
-import { CustomerModel } from '@/models/CustomerModel';
-import { CustomerRepository } from '@/repositories/CustomerRepository';
-import { CustomerService } from '@/services/CustomerService';
-import { CustomerController } from '@/controllers/CustomerController';
-import { AuthController } from '@/controllers/AuthController';
-import { AuthModel } from '@/models/AuthModel';
-import { AuthRepository } from '@/repositories/AuthRepository';
-import { AuthService } from '@/services/AuthService';
-import { AuthTokenService } from '@/services/AuthTokenService';
+import { AddressModel } from '@/models/address.model';
+import { CustomerModel } from '@/models/customer.model';
+import { CustomerRepository } from '@/repositories/customer.repository';
+import { CustomerService } from '@/services/customer.service';
+import { CustomerController } from '@/controllers/customer.controller';
+import { AuthController } from '@/controllers/auth.controller';
+import { AuthModel } from '@/models/auth.model';
+import { AuthRepository } from '@/repositories/auth.repository';
+import { AuthService } from '@/services/auth.service';
+import { AuthTokenService } from '@/services/auth.token.service';
 import { FastifyBaseLogger, FastifyInstance, RawReplyDefaultExpression, RawRequestDefaultExpression, RawServerDefault } from 'fastify';
 import { ZodTypeProvider } from '@fastify/type-provider-zod';
 
@@ -22,7 +22,7 @@ export default fp(async (server) => {
     const authModel = new AuthModel();
     const authRepository = new AuthRepository(authModel);
     const authTokenService = new AuthTokenService(server);
-    const authService = new AuthService(authRepository, authTokenService);
+    const authService = new AuthService(authRepository, authTokenService, server.log);
     const authController = new AuthController(authService);
 
     server.decorate('customerController', customerController);
