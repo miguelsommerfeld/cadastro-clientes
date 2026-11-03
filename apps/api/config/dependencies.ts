@@ -22,7 +22,7 @@ export default fp(async (server) => {
     const authModel = new AuthModel();
     const authRepository = new AuthRepository(authModel);
     const authTokenService = new AuthTokenService(server);
-    const authService = new AuthService(authRepository, authTokenService);
+    const authService = new AuthService(authRepository, authTokenService, server.log);
     const authController = new AuthController(authService);
 
     server.decorate('customerController', customerController);

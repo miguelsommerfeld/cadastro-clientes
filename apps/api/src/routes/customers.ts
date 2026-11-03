@@ -7,8 +7,8 @@ import {
 } from '@packages/contracts/customer.schema';
 import { documentValidation } from '@packages/contracts/document.schema'
 import { stateValidator } from '@/helpers/state.validator';
-import { rolePermissions, type Permission } from "@packages/contracts/auth.schema";
 import z from 'zod';
+import { authenticate } from '@/middlewares/auth.middleware';
 
 const applicationErrorResponseSchema = z.object({
     code: z.number(),
@@ -20,46 +20,13 @@ const problemDetailsSchema = z.object({
     status: z.number(),
     detail: z.string()
 });
-const unauthenticatedResponse = {
-    type: "/problems/unauthenticated",
-    title: "Unauthenticated",
-    status: 401,
-    detail: "A sessão é inválida ou expirou."
-};
 const protectedResponseSchemas = {
     401: problemDetailsSchema,
     403: z.union([applicationErrorResponseSchema, problemDetailsSchema])
 };
 
 const customersRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedInstance) {
-    server.addHook("onRequest", async (request, reply) => {
-        const accessToken = request.cookies.access_token;
-        if (!accessToken) {
-            return reply.code(401).send(unauthenticatedResponse);
-        }
-
-        let claims;
-        try {
-            claims = await server.authController.verifyAccessToken(accessToken);
-        } catch (error) {
-            request.log.warn({ err: error }, "Rejecting an invalid access token");
-            return reply.code(401).send(unauthenticatedResponse);
-        }
-
-        request.user = claims;
-
-        const permission = request.routeOptions.config.permission;
-        const userPermissions: readonly Permission[] = rolePermissions[claims.role];
-
-        if (permission && !userPermissions.includes(permission)) {
-            return reply.code(403).send({
-                type: "/problems/forbidden",
-                title: "Forbidden",
-                status: 403,
-                detail: "Você não tem permissão para executar esta ação."
-            });
-        }
-    });
+    server.addHook("onRequest", authenticate);
 
     server.setErrorHandler((error, _request, reply) => {
         const statusCode =
