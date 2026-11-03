@@ -1,45 +1,15 @@
-import type { FastifyPluginAsyncZod } from "@fastify/type-provider-zod";
-import type { FastifyReply } from "fastify";
 import { z } from "zod";
+import type { FastifyPluginAsyncZod } from "@fastify/type-provider-zod";
+import type { FastifyTypedInstance } from "@config/dependencies";
+import { accessCookie, refreshCookie } from "@config/jwt";
 import {
     authRequestSchema,
     authSessionUserSchema,
+    authErrorSchema,
     loginRequestSchema,
     type AccessTokenClaims
 } from "@packages/contracts/auth.schema";
-import { env } from "../../config/env";
-import {
-    ACCESS_TOKEN_TTL_SECONDS,
-    REFRESH_TOKEN_TTL_SECONDS
-} from "@/constants/auth";
-import type { ApplicationErrorResponse } from "@/services/service";
-import type { FastifyTypedInstance } from "../../config/dependencies";
-
-const authErrorSchema = z.object({
-    code: z.number().optional(),
-    message: z.string()
-});
-const authFieldLabels: Record<string, string> = {
-    tenantName: "Nome da empresa",
-    slug: "Identificador da empresa",
-    username: "Nome",
-    email: "E-mail",
-    password: "Senha"
-};
-const accessCookie = {
-    httpOnly: true,
-    sameSite: "strict" as const,
-    secure: env.NODE_ENV === "production",
-    path: "/api",
-    maxAge: ACCESS_TOKEN_TTL_SECONDS
-};
-const refreshCookie = {
-    httpOnly: true,
-    sameSite: "strict" as const,
-    secure: env.NODE_ENV === "production",
-    path: "/api/v1/auth",
-    maxAge: REFRESH_TOKEN_TTL_SECONDS
-};
+import { clearAuthCookies, sendAuthError, formatValidationError } from "@/helpers/auth";
 
 const authRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedInstance) {
     server.setErrorHandler((error, _request, reply) => {
@@ -127,7 +97,7 @@ const authRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedIn
         const refreshToken = request.cookies.refresh_token;
 
         if (!refreshToken) {
-            clearAuthCookies(reply);
+            clearAuthCookies(reply, accessCookie, refreshCookie);
 
             return reply.code(401).send({
                 code: 401,
@@ -138,7 +108,7 @@ const authRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedIn
         const result = await server.authController.refresh(refreshToken);
 
         if ("code" in result) {
-            if (result.code === 401) clearAuthCookies(reply);
+            if (result.code === 401) clearAuthCookies(reply, accessCookie, refreshCookie);
             return sendAuthError(reply, result);
         }
 
@@ -167,10 +137,10 @@ const authRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedIn
             }
         }
 
-        const result = await server.authController.logout(request.cookies.refresh_token, claims);
+        const result = await server.authController.logout(accessToken, claims);
         if (result && "code" in result) return sendAuthError(reply, result);
 
-        clearAuthCookies(reply);
+        clearAuthCookies(reply, accessCookie, refreshCookie);
 
         return reply.code(204).send(null);
     });
@@ -200,58 +170,5 @@ const authRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedIn
         return reply.code(200).send(session);
     });
 };
-
-function clearAuthCookies(reply: FastifyReply): void {
-    reply.clearCookie("access_token", accessCookie);
-    reply.clearCookie("refresh_token", refreshCookie);
-}
-
-function sendAuthError(
-    reply: FastifyReply,
-    error: ApplicationErrorResponse
-) {
-    return reply.code(error.code).send(error);
-}
-
-function formatValidationError(error: unknown): string {
-    if (
-        typeof error !== "object" ||
-        error === null ||
-        !("validation" in error) ||
-        !Array.isArray(error.validation)
-    ) {
-        return "Os dados enviados são inválidos.";
-    }
-
-    const messages = error.validation.flatMap((issue) => {
-        if (
-            typeof issue !== "object" ||
-            issue === null ||
-            !("instancePath" in issue) ||
-            typeof issue.instancePath !== "string" ||
-            !("message" in issue) ||
-            typeof issue.message !== "string"
-        ) {
-            return [];
-        }
-
-        const path = issue.instancePath.split("/").filter(Boolean);
-        const field = path.at(-1);
-        const label = field ? authFieldLabels[field] ?? field : "Dados";
-
-        if (issue.message.includes("received undefined")) {
-            return [`${label} é obrigatório.`];
-        }
-        if (issue.message === "Invalid email address") {
-            return ["E-mail inválido."];
-        }
-
-        return [`${label}: ${issue.message}`];
-    });
-
-    return messages.length > 0
-        ? messages.join(" ")
-        : "Os dados enviados são inválidos.";
-}
 
 export default authRoutes;

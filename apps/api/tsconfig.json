@@ -6,7 +6,8 @@
     "paths": {
       "@/*": ["./src/*"],
       "@db": ["./prisma/db.ts"],
-      "@packages/*": ["./../../packages/*.ts"]
+      "@packages/*": ["./../../packages/*.ts"],
+      "@config/*": ["./config/*.ts"]
     },
     "target": "ES2022",
     "module": "preserve",
