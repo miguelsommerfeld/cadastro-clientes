@@ -67,6 +67,11 @@ export const authSessionUserSchema = z.object({
     })
 });
 
+export const authErrorSchema = z.object({
+    code: z.number().optional(),
+    message: z.string()
+});
+
 export const accessTokenClaimsSchema = z.object({
     sub: z.uuid(),
     tid: tenantIdSchema,
@@ -86,4 +91,5 @@ export type UserSchema = z.infer<typeof userSchema>;
 export type AuthRequest = z.infer<typeof authRequestSchema>;
 export type LoginRequest = z.infer<typeof loginRequestSchema>;
 export type AuthSessionUser = z.infer<typeof authSessionUserSchema>;
+export type AuthError = z.infer<typeof authErrorSchema>;
 export type AccessTokenClaims = z.infer<typeof accessTokenClaimsSchema>;
