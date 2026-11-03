@@ -8,7 +8,7 @@ import {
   MigrationCLI,
   checkExpression,
   col,
-  placeholder,
+  rawSql,
 } from '@prisma/orm-postgres/migration';
 
 export default class M extends Migration<Start, End> {
@@ -95,14 +95,52 @@ export default class M extends Migration<Start, End> {
         table: 'customers',
         column: col('tenant_id', 'text', { codecRef: { codecId: 'pg/text@1' } }),
       }),
-      this.dataTransform(endContract, 'backfill-customers-tenant_id', {
-        check: () => placeholder('backfill-customers-tenant_id:check'),
-        run: () => placeholder('backfill-customers-tenant_id:run'),
+      rawSql({
+        id: 'guard.customers.tenant_id_backfill',
+        label: 'Require a tenant mapping for existing customers',
+        operationClass: 'data',
+        target: {
+          id: 'postgres',
+          details: { schema: 'public', objectType: 'table', name: 'customers' },
+        },
+        precheck: [{ description: 'run tenant mapping guard', sql: 'SELECT true AS "result"', params: [] }],
+        execute: [{
+          description: 'reject unmapped existing customers',
+          sql: `DO $$ BEGIN
+            IF EXISTS (SELECT 1 FROM "public"."customers" WHERE "tenant_id" IS NULL) THEN
+              RAISE EXCEPTION 'Cannot apply tenant migration: existing customers need an explicit tenant mapping.';
+            END IF;
+          END $$`,
+          params: [],
+        }],
+        postcheck: [{ description: 'verify tenant mapping guard', sql: 'SELECT true AS "result"', params: [] }],
       }),
       this.setNotNull({ schema: 'public', table: 'customers', column: 'tenant_id' }),
-      this.dataTransform(endContract, 'handle-nulls-addresses-number', {
-        check: () => placeholder('handle-nulls-addresses-number:check'),
-        run: () => placeholder('handle-nulls-addresses-number:run'),
+      rawSql({
+        id: 'data.addresses.backfill_number',
+        label: 'Set the default number for addresses without one',
+        operationClass: 'data',
+        target: {
+          id: 'postgres',
+          details: { schema: 'public', objectType: 'table', name: 'addresses' },
+        },
+        precheck: [{
+          description: 'find addresses without a number',
+          sql: 'SELECT EXISTS (SELECT 1 FROM "public"."addresses" WHERE "number" IS NULL) AS "result"',
+          params: [],
+        }],
+        execute: [{
+          description: 'set the default number on existing addresses',
+          sql: `UPDATE "public"."addresses"
+            SET "number" = 'S/N'
+            WHERE "number" IS NULL`,
+          params: [],
+        }],
+        postcheck: [{
+          description: 'verify every address has a number',
+          sql: 'SELECT NOT EXISTS (SELECT 1 FROM "public"."addresses" WHERE "number" IS NULL) AS "result"',
+          params: [],
+        }],
       }),
       this.setNotNull({ schema: 'public', table: 'addresses', column: 'number' }),
       this.dropNotNull({ schema: 'public', table: 'addresses', column: 'complement' }),

@@ -71,7 +71,7 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server: FastifyTy
             const id = req.query.id;
 
             if (id) {
-                const customer = await this.customerController.getCustomer(req.user.tid, id);
+                const customer = await this.customerController.getCustomer(req.user, id);
 
                 if ("code" in customer) {
                     return res.status(customer.code).send(customer);
@@ -80,7 +80,7 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server: FastifyTy
                 return res.status(200).send(customer);
             }
 
-            const customers = await this.customerController.getAllCustomers(req.user.tid);
+            const customers = await this.customerController.getAllCustomers(req.user);
 
             if (!Array.isArray(customers)) {
                 return res.status(customers.code).send(customers);
@@ -103,7 +103,7 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server: FastifyTy
             }
         },
         handler: async function (req, res) {
-            const customers = await this.customerController.getAllDeletedCustomers(req.user.tid);
+            const customers = await this.customerController.getAllDeletedCustomers(req.user);
 
             if (!Array.isArray(customers)) {
                 return res.status(customers.code).send(customers);
@@ -125,17 +125,17 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server: FastifyTy
                     message: z.string(),
                     error: z.string()
                 })]),
+                404: applicationErrorResponseSchema,
                 409: documentValidation,
                 500: documentValidation,
                 ...protectedResponseSchemas,
-                404: applicationErrorResponseSchema,
                 503: applicationErrorResponseSchema
             }
         },
         handler: async function (req, res) {
             // Validation
             const isDocumentUnique = await this.customerController.isDocumentUnique(
-                req.user.tid,
+                req.user,
                 req.body.document
             );
 
@@ -151,7 +151,7 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server: FastifyTy
             }
 
             const isEmailRegistered = await this.customerController.isEmailRegistered(
-                req.user.tid,
+                req.user,
                 req.body.email
             );
 
@@ -171,7 +171,7 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server: FastifyTy
             try {
                 const { address, ...customerData } = req.body;
                 const response = await this.customerController.registerCustomer(
-                    req.user.tid,
+                    req.user,
                     customerData,
                     address
                 );
@@ -222,7 +222,7 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server: FastifyTy
             }
 
             const id = req.query.id;
-            const customer = await this.customerController.getDeletedCustomer(req.user.tid, id);
+            const customer = await this.customerController.getDeletedCustomer(req.user, id);
 
             if (customer && "code" in customer) {
                 return res.status(customer.code).send(customer);
@@ -235,7 +235,7 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server: FastifyTy
                 });
             }
 
-            const result = await this.customerController.restoreCustomer(req.user.tid, id);
+            const result = await this.customerController.restoreCustomer(req.user, id);
             if (result !== undefined && "code" in result) {
                 return res.status(result.code).send(result);
             }
@@ -276,7 +276,7 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server: FastifyTy
             }
             
             const id = req.query.id;
-            const customer = await this.customerController.getCustomer(req.user.tid, id);
+            const customer = await this.customerController.getCustomer(req.user, id);
 
             if ("code" in customer) {
                 return res.status(customer.code).send(customer);
@@ -285,7 +285,7 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server: FastifyTy
             const userEmail = req.body.email;
             if (customer.email !== userEmail && typeof userEmail === 'string') {
                 const isEmailAlreadyRegistered = await this.customerController.isEmailRegistered(
-                    req.user.tid,
+                    req.user,
                     userEmail
                 );
 
@@ -297,7 +297,7 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server: FastifyTy
                 }
             }
 
-            await this.customerController.updateCustomer(req.user.tid, id, req.body);
+            await this.customerController.updateCustomer(req.user, id, req.body);
             return res.status(200).send();
         }
     });
@@ -329,13 +329,13 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server: FastifyTy
             }
 
             const id = req.query.id;
-            const customer = await this.customerController.getCustomer(req.user.tid, id);
+            const customer = await this.customerController.getCustomer(req.user, id);
 
             if ("code" in customer) {
                 return res.status(customer.code).send(customer);
             }
 
-            const result = await this.customerController.deleteCustomer(req.user.tid, id);
+            const result = await this.customerController.deleteCustomer(req.user, id);
             if (result !== undefined && "code" in result) {
                 return res.status(result.code).send(result);
             }
@@ -371,7 +371,7 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server: FastifyTy
             }
 
             const id = req.query.id;
-            const customer = await this.customerController.getDeletedCustomer(req.user.tid, id);
+            const customer = await this.customerController.getDeletedCustomer(req.user, id);
 
             if (customer !== null && "code" in customer) {
                 return res.status(customer.code).send(customer);
@@ -384,7 +384,7 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server: FastifyTy
                 });
             }
 
-            const result = await this.customerController.permanentDeleteCustomer(req.user.tid, id);
+            const result = await this.customerController.permanentDeleteCustomer(req.user, id);
             if (typeof result !== "boolean" && result !== undefined) {
                 return res.status(result.code).send(result);
             }

@@ -12,11 +12,11 @@ export function clearAuthCookies(
 {
     reply.clearCookie("access_token", {
         ...accessCookie,
-        secure: accessCookie.secure === "true"
+        secure: accessCookie.secure === true
     });
     reply.clearCookie("refresh_token", {
         ...refreshCookie,
-        secure: refreshCookie.secure === "true"
+        secure: refreshCookie.secure === true
     });
 }
 

@@ -7,57 +7,70 @@ import type {
     CustomerUpdateData
 } from "@packages/contracts/customer.schema";
 import type { DocumentValidation } from '@packages/contracts/document.schema'
-import type { TenantId } from "@packages/contracts/auth.schema";
+import type { AccessTokenClaims, AuthSessionUser } from "@packages/contracts/auth.schema";
 import { cnpj, cpf } from 'cpf-cnpj-validator'
 import { Service, type ApplicationErrorResponse } from "./service";
+import { AuthService } from "./auth.service";
 import type { CustomerWithAddress } from "@/models/customer.model";
 
-export class CustomerService extends Service
-{
+export class CustomerService extends Service {
+    private authService: AuthService;
     private repository: CustomerRepository;
 
-    constructor(repository: CustomerRepository)
-    {
+    constructor(repository: CustomerRepository, authService: AuthService) {
         super()
         this.repository = repository;
+        this.authService = authService;
     }
 
     public async registerCustomer(
-        tenantId: TenantId,
+        claims: AccessTokenClaims,
         customerData: CustomerRegistration,
         addressData: AddressRequestSchema
-    ): Promise<CustomerResponse | ApplicationErrorResponse>
-    {
-        const customer = await this.repository.registerCustomer(tenantId, customerData, addressData);
+    ): Promise<CustomerResponse | ApplicationErrorResponse> {
+        const response = await this.getUserIdFromClaims(claims);
+
+        if (typeof response !== "string") return response;
+
+        const customer = await this.repository.registerCustomer(claims.tid, response, customerData, addressData);
 
         return this.toApplicationErrorResponse(this.toCustomerResponse(customer));
     }
 
-    public async updateCustomer(tenantId: TenantId, id: string, customerData: CustomerUpdateData)
-    {
-        return await this.repository.updateCustomer(tenantId, id, customerData);
+    public async updateCustomer(claims: AccessTokenClaims, customerId: string, customerData: CustomerUpdateData) {
+        const response = await this.getUserIdFromClaims(claims);
+
+        if (typeof response !== "string") return response;
+        return await this.repository.updateCustomer(claims.tid, response, customerId, customerData);
     }
 
-    public async deleteCustomer(tenantId: TenantId, customerId: string) {
-        const result = await this.repository.deleteCustomer(tenantId, customerId);
+    public async deleteCustomer(claims: AccessTokenClaims, customerId: string) {
+        const response = await this.getUserIdFromClaims(claims);
+
+        if (typeof response !== "string") return response;
+
+        const result = await this.repository.deleteCustomer(claims.tid, response, customerId);
         return this.toApplicationErrorResponse(result);
     }
 
-    public async restoreCustomer(tenantId: TenantId, customerId: string) {
-        const result = await this.repository.restoreCustomer(tenantId, customerId);
+    public async restoreCustomer(claims: AccessTokenClaims, customerId: string) {
+        const response = await this.getUserIdFromClaims(claims);
+
+        if (typeof response !== "string") return response;
+
+        const result = await this.repository.restoreCustomer(claims.tid, response, customerId);
         return this.toApplicationErrorResponse(result);
     }
 
-    public async permanentDeleteCustomer(tenantId: TenantId, customerId: string) {
-        const result = await this.repository.permanentDeleteCustomer(tenantId, customerId);
+    public async permanentDeleteCustomer(claims: AccessTokenClaims, customerId: string) {
+        const result = await this.repository.permanentDeleteCustomer(claims.tid, customerId);
         return this.toApplicationErrorResponse(result);
     }
 
     public async isDocumentUnique(
-        tenantId: TenantId,
+        claims: AccessTokenClaims,
         customerDocument: string
-    ): Promise<DocumentValidation | ApplicationErrorResponse>
-    {
+    ): Promise<DocumentValidation | ApplicationErrorResponse> {
         if (!this.isDocumentValid(customerDocument)) {
             return {
                 status: 409,
@@ -65,13 +78,13 @@ export class CustomerService extends Service
             };
         }
 
-        const isDocumentInTheBin = await this.isDocumentInTheBin(tenantId, customerDocument);
+        const isDocumentInTheBin = await this.isDocumentInTheBin(claims, customerDocument);
 
         if ("code" in isDocumentInTheBin) return isDocumentInTheBin;
 
         if (isDocumentInTheBin.status === 409) return isDocumentInTheBin;
 
-        if (!await this.repository.isDocumentUnique(tenantId, customerDocument)) {
+        if (!await this.repository.isDocumentUnique(claims.tid, customerDocument)) {
             return {
                 status: 400,
                 message: "O documento inserido já foi registrado"
@@ -85,12 +98,11 @@ export class CustomerService extends Service
     }
 
     public async isDocumentInTheBin(
-        tenantId: TenantId,
+        claims: AccessTokenClaims,
         customerDocument: string
-    ): Promise<DocumentValidation | ApplicationErrorResponse>
-    {
+    ): Promise<DocumentValidation | ApplicationErrorResponse> {
         const result = this.toApplicationErrorResponse(
-            await this.repository.isDocumentInTheBin(tenantId, customerDocument)
+            await this.repository.isDocumentInTheBin(claims.tid, customerDocument)
         );
 
         if (typeof result !== "boolean") return result;
@@ -108,8 +120,8 @@ export class CustomerService extends Service
         }
     }
 
-    public async getCustomer(tenantId: TenantId, id: string): Promise<CustomerResponse | ApplicationErrorResponse> {
-        const response = await this.repository.getCustomer(tenantId, id);
+    public async getCustomer(claims: AccessTokenClaims, id: string): Promise<CustomerResponse | ApplicationErrorResponse> {
+        const response = await this.repository.getCustomer(claims.tid, id);
 
         if (response instanceof ApplicationError) {
             return this.toApplicationErrorResponse(response);
@@ -122,8 +134,8 @@ export class CustomerService extends Service
         return this.toApplicationErrorResponse(customerResponse);
     }
 
-    public async getAllCustomers(tenantId: TenantId): Promise<CustomerResponse[] | ApplicationErrorResponse> {
-        const response = await this.repository.getAllCustomers(tenantId);
+    public async getAllCustomers(claims: AccessTokenClaims): Promise<CustomerResponse[] | ApplicationErrorResponse> {
+        const response = await this.repository.getAllCustomers(claims.tid);
 
         if (response instanceof ApplicationError) {
             return this.toApplicationErrorResponse(response);
@@ -139,13 +151,13 @@ export class CustomerService extends Service
         return customersResponse;
     }
 
-    public async getDeletedCustomer(tenantId: TenantId, customerId: string) {
-        const result = await this.repository.getDeletedCustomer(tenantId, customerId);
+    public async getDeletedCustomer(claims: AccessTokenClaims, customerId: string) {
+        const result = await this.repository.getDeletedCustomer(claims.tid, customerId);
         return this.toApplicationErrorResponse(result);
     }
 
-    public async getAllDeletedCustomers(tenantId: TenantId): Promise<CustomerResponse[] | ApplicationErrorResponse> {
-        const customers = await this.repository.getAllDeletedCustomers(tenantId);
+    public async getAllDeletedCustomers(claims: AccessTokenClaims): Promise<CustomerResponse[] | ApplicationErrorResponse> {
+        const customers = await this.repository.getAllDeletedCustomers(claims.tid);
 
         if (customers instanceof ApplicationError) {
             return this.toApplicationErrorResponse(customers);
@@ -161,13 +173,30 @@ export class CustomerService extends Service
         return customerResponses;
     }
 
-    private isDocumentValid(customerDocument: string): boolean
-    {
+    private async getUserIdFromClaims(claims: AccessTokenClaims): Promise<string | ApplicationErrorResponse> {
+        const response: AuthSessionUser | ApplicationError
+            | ApplicationErrorResponse | null
+            = await this.authService.getSession(claims);
+
+        if (response instanceof ApplicationError || (response && "code" in response)) {
+            return this.toApplicationErrorResponse(response);
+        }
+
+        if (!response) {
+            return this.toApplicationErrorResponse(
+                new ApplicationError(401, "Sessão inválida ou expirada")
+            );
+        }
+
+        return response.id;
+    }
+
+    private isDocumentValid(customerDocument: string): boolean {
         return cpf.isValid(customerDocument) || cnpj.isValid(customerDocument);
     }
 
-    public async isEmailRegistered(tenantId: TenantId, userEmail: string): Promise<DocumentValidation> {
-        const isAlreadyRegistered = await this.repository.isEmailRegistered(tenantId, userEmail);
+    public async isEmailRegistered(claims: AccessTokenClaims, userEmail: string): Promise<DocumentValidation> {
+        const isAlreadyRegistered = await this.repository.isEmailRegistered(claims.tid, userEmail);
 
         if (isAlreadyRegistered) {
             return {
@@ -184,8 +213,7 @@ export class CustomerService extends Service
 
     private toCustomerResponse(
         customer: CustomerWithAddress
-    ): CustomerResponse | ApplicationError
-    {
+    ): CustomerResponse | ApplicationError {
         const responseFields = {
             id: customer.customer.id,
             name: customer.customer.name,
@@ -204,10 +232,13 @@ export class CustomerService extends Service
                 }
             }),
             createdAt: customer.customer.createdAt.toString(),
+            createdBy: customer.customer.createdBy ?? null,
             ...(customer.customer.updatedAt !== null && {
                 updatedAt: customer.customer.updatedAt.toString()
             }),
-            deletedAt: customer.customer.deletedAt?.toString() ?? null
+            updatedBy: customer.customer.updatedBy ?? null,
+            deletedAt: customer.customer.deletedAt?.toString() ?? null,
+            deletedBy: customer.customer.deletedBy ?? null
         };
 
         if (customer.customer.personType === 'INDIVIDUAL') {

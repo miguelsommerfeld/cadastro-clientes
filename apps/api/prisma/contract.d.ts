@@ -18,7 +18,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'891a366bb63d48652e8b87217923ad7f3bfc80263699313e692c0c21246aaefb'>;
+  StorageHashBase<'ce84694f2692e5b625433f33d78a6eb78ac1e628e32cdf67d4f484328003c333'>;
 export type ExecutionHash =
   ExecutionHashBase<'8ec3e0ad7e78f18bc2a71fd162ac635a941999fb049bdf8744f226a9b610dab7'>;
 export type ProfileHash =
@@ -248,7 +248,9 @@ export type FieldOutputTypes = {
     readonly Customers: {
       readonly birthDate: CodecTypes['pg/date-temporal@1']['output'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly createdBy: CodecTypes['pg/text@1']['output'] | null;
       readonly deletedAt: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
+      readonly deletedBy: CodecTypes['pg/text@1']['output'] | null;
       readonly document: Varchar<14>;
       readonly email: Varchar<254> | null;
       readonly id: CodecTypes['pg/text@1']['output'];
@@ -258,6 +260,7 @@ export type FieldOutputTypes = {
       readonly tenantId: CodecTypes['pg/text@1']['output'];
       readonly tradeName: Varchar<150> | null;
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
+      readonly updatedBy: CodecTypes['pg/text@1']['output'] | null;
     };
     readonly Sessions: {
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
@@ -278,6 +281,8 @@ export type FieldOutputTypes = {
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
       readonly email: Varchar<254>;
       readonly id: CodecTypes['pg/text@1']['output'];
+      readonly isActive: CodecTypes['pg/bool@1']['output'];
+      readonly lastLoginAt: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
       readonly name: Varchar<100>;
       readonly passwordHash: Varchar<253>;
       readonly role: 'ADMIN' | 'OPERATOR' | 'VIEWER';
@@ -302,7 +307,9 @@ export type FieldInputTypes = {
     readonly Customers: {
       readonly birthDate: CodecTypes['pg/date-temporal@1']['input'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly createdBy: CodecTypes['pg/text@1']['input'] | null;
       readonly deletedAt: CodecTypes['pg/timestamptz-temporal@1']['input'] | null;
+      readonly deletedBy: CodecTypes['pg/text@1']['input'] | null;
       readonly document: CodecTypes['sql/varchar@1']['input'];
       readonly email: CodecTypes['sql/varchar@1']['input'] | null;
       readonly id: CodecTypes['pg/text@1']['input'];
@@ -312,6 +319,7 @@ export type FieldInputTypes = {
       readonly tenantId: CodecTypes['pg/text@1']['input'];
       readonly tradeName: CodecTypes['sql/varchar@1']['input'] | null;
       readonly updatedAt: CodecTypes['pg/timestamptz-temporal@1']['input'] | null;
+      readonly updatedBy: CodecTypes['pg/text@1']['input'] | null;
     };
     readonly Sessions: {
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
@@ -332,6 +340,8 @@ export type FieldInputTypes = {
       readonly createdAt: CodecTypes['pg/timestamptz-temporal@1']['input'];
       readonly email: CodecTypes['sql/varchar@1']['input'];
       readonly id: CodecTypes['pg/text@1']['input'];
+      readonly isActive: CodecTypes['pg/bool@1']['input'];
+      readonly lastLoginAt: CodecTypes['pg/timestamptz-temporal@1']['input'] | null;
       readonly name: CodecTypes['sql/varchar@1']['input'];
       readonly passwordHash: CodecTypes['sql/varchar@1']['input'];
       readonly role: 'ADMIN' | 'OPERATOR' | 'VIEWER';
@@ -356,7 +366,9 @@ export type StorageColumnTypes = {
     readonly customers: {
       readonly birth_date: CodecTypes['pg/date-temporal@1']['output'] | null;
       readonly created_at: CodecTypes['pg/timestamptz-temporal@1']['output'];
+      readonly created_by: CodecTypes['pg/text@1']['output'] | null;
       readonly deleted_at: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
+      readonly deleted_by: CodecTypes['pg/text@1']['output'] | null;
       readonly document: Varchar<14>;
       readonly email: Varchar<254> | null;
       readonly id: CodecTypes['pg/text@1']['output'];
@@ -366,6 +378,7 @@ export type StorageColumnTypes = {
       readonly tenant_id: CodecTypes['pg/text@1']['output'];
       readonly trade_name: Varchar<150> | null;
       readonly updated_at: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
+      readonly updated_by: CodecTypes['pg/text@1']['output'] | null;
     };
     readonly sessions: {
       readonly created_at: CodecTypes['pg/timestamptz-temporal@1']['output'];
@@ -386,6 +399,8 @@ export type StorageColumnTypes = {
       readonly created_at: CodecTypes['pg/timestamptz-temporal@1']['output'];
       readonly email: Varchar<254>;
       readonly id: CodecTypes['pg/text@1']['output'];
+      readonly is_active: CodecTypes['pg/bool@1']['output'];
+      readonly last_login_at: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
       readonly name: Varchar<100>;
       readonly password_hash: Varchar<253>;
       readonly role: 'ADMIN' | 'OPERATOR' | 'VIEWER';
@@ -410,7 +425,9 @@ export type StorageColumnInputTypes = {
     readonly customers: {
       readonly birth_date: CodecTypes['pg/date-temporal@1']['input'] | null;
       readonly created_at: CodecTypes['pg/timestamptz-temporal@1']['input'];
+      readonly created_by: CodecTypes['pg/text@1']['input'] | null;
       readonly deleted_at: CodecTypes['pg/timestamptz-temporal@1']['input'] | null;
+      readonly deleted_by: CodecTypes['pg/text@1']['input'] | null;
       readonly document: CodecTypes['sql/varchar@1']['input'];
       readonly email: CodecTypes['sql/varchar@1']['input'] | null;
       readonly id: CodecTypes['pg/text@1']['input'];
@@ -420,6 +437,7 @@ export type StorageColumnInputTypes = {
       readonly tenant_id: CodecTypes['pg/text@1']['input'];
       readonly trade_name: CodecTypes['sql/varchar@1']['input'] | null;
       readonly updated_at: CodecTypes['pg/timestamptz-temporal@1']['input'] | null;
+      readonly updated_by: CodecTypes['pg/text@1']['input'] | null;
     };
     readonly sessions: {
       readonly created_at: CodecTypes['pg/timestamptz-temporal@1']['input'];
@@ -440,6 +458,8 @@ export type StorageColumnInputTypes = {
       readonly created_at: CodecTypes['pg/timestamptz-temporal@1']['input'];
       readonly email: CodecTypes['sql/varchar@1']['input'];
       readonly id: CodecTypes['pg/text@1']['input'];
+      readonly is_active: CodecTypes['pg/bool@1']['input'];
+      readonly last_login_at: CodecTypes['pg/timestamptz-temporal@1']['input'] | null;
       readonly name: CodecTypes['sql/varchar@1']['input'];
       readonly password_hash: CodecTypes['sql/varchar@1']['input'];
       readonly role: 'ADMIN' | 'OPERATOR' | 'VIEWER';
@@ -465,7 +485,9 @@ export namespace Models {
   export type public_Customers = {
     birthDate: CodecTypes['pg/date-temporal@1']['output'] | null;
     createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
+    createdBy: CodecTypes['pg/text@1']['output'] | null;
     deletedAt: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
+    deletedBy: CodecTypes['pg/text@1']['output'] | null;
     document: Varchar<14>;
     email: Varchar<254> | null;
     id: CodecTypes['pg/text@1']['output'];
@@ -475,6 +497,7 @@ export namespace Models {
     tenantId: CodecTypes['pg/text@1']['output'];
     tradeName: Varchar<150> | null;
     updatedAt: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
+    updatedBy: CodecTypes['pg/text@1']['output'] | null;
     readonly [RelationKeys]?: never;
   };
   export type public_Sessions = {
@@ -498,6 +521,8 @@ export namespace Models {
     createdAt: CodecTypes['pg/timestamptz-temporal@1']['output'];
     email: Varchar<254>;
     id: CodecTypes['pg/text@1']['output'];
+    isActive: CodecTypes['pg/bool@1']['output'];
+    lastLoginAt: CodecTypes['pg/timestamptz-temporal@1']['output'] | null;
     name: Varchar<100>;
     passwordHash: Varchar<253>;
     role: 'ADMIN' | 'OPERATOR' | 'VIEWER';
@@ -604,10 +629,7 @@ type ContractBase = Omit<
                 };
               };
               primaryKey: { readonly columns: readonly ['id'] };
-              uniques: readonly [
-                { readonly columns: readonly ['id'] },
-                { readonly columns: readonly ['customer_id'] },
-              ];
+              uniques: readonly [{ readonly columns: readonly ['customer_id'] }];
               indexes: readonly [];
               foreignKeys: readonly [];
             };
@@ -626,9 +648,21 @@ type ContractBase = Omit<
                   readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
                   readonly many: false;
                 };
+                readonly created_by: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly deleted_at: {
                   readonly dataType: 'pg/timestamptz';
                   readonly codecId: 'pg/timestamptz-temporal@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly deleted_by: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
                   readonly nullable: true;
                   readonly many: false;
                 };
@@ -691,13 +725,15 @@ type ContractBase = Omit<
                   readonly nullable: true;
                   readonly many: false;
                 };
+                readonly updated_by: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
               };
               primaryKey: { readonly columns: readonly ['id'] };
-              uniques: readonly [
-                { readonly columns: readonly ['id'] },
-                { readonly columns: readonly ['email'] },
-                { readonly columns: readonly ['tenant_id', 'document'] },
-              ];
+              uniques: readonly [{ readonly columns: readonly ['tenant_id', 'document', 'email'] }];
               indexes: readonly [
                 {
                   readonly name: 'customers_tenant_id_idx_41c0d441';
@@ -748,6 +784,7 @@ type ContractBase = Omit<
                   readonly many: false;
                 };
               };
+              primaryKey: { readonly columns: readonly ['id'] };
               uniques: readonly [];
               indexes: readonly [
                 {
@@ -799,10 +836,8 @@ type ContractBase = Omit<
                   readonly many: false;
                 };
               };
-              uniques: readonly [
-                { readonly columns: readonly ['id'] },
-                { readonly columns: readonly ['slug'] },
-              ];
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['slug'] }];
               indexes: readonly [];
               foreignKeys: readonly [];
             };
@@ -825,6 +860,22 @@ type ContractBase = Omit<
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly is_active: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', true>;
+                  };
+                  readonly many: false;
+                };
+                readonly last_login_at: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                  readonly nullable: true;
                   readonly many: false;
                 };
                 readonly name: {
@@ -860,15 +911,13 @@ type ContractBase = Omit<
                   readonly many: false;
                 };
               };
-              uniques: readonly [
-                { readonly columns: readonly ['id'] },
-                { readonly columns: readonly ['email'] },
-              ];
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
               indexes: readonly [
                 {
-                  readonly name: 'users_tenant_id_idx_41c0d441';
-                  readonly prefix: 'users_tenant_id_idx';
-                  readonly columns: readonly ['tenant_id'];
+                  readonly name: 'users_tenant_id_email_idx_511e4059';
+                  readonly prefix: 'users_tenant_id_email_idx';
+                  readonly columns: readonly ['tenant_id', 'email'];
                   readonly unique: false;
                 },
               ];
@@ -1002,12 +1051,20 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/timestamptz-temporal@1';
                 };
               };
+              readonly createdBy: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly deletedAt: {
                 readonly nullable: true;
                 readonly type: {
                   readonly kind: 'scalar';
                   readonly codecId: 'pg/timestamptz-temporal@1';
                 };
+              };
+              readonly deletedBy: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly document: {
                 readonly nullable: false;
@@ -1068,6 +1125,10 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/timestamptz-temporal@1';
                 };
               };
+              readonly updatedBy: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
             };
             readonly relations: Record<string, never>;
             readonly storage: {
@@ -1076,7 +1137,9 @@ type ContractBase = Omit<
               readonly fields: {
                 readonly birthDate: { readonly column: 'birth_date' };
                 readonly createdAt: { readonly column: 'created_at' };
+                readonly createdBy: { readonly column: 'created_by' };
                 readonly deletedAt: { readonly column: 'deleted_at' };
+                readonly deletedBy: { readonly column: 'deleted_by' };
                 readonly document: { readonly column: 'document' };
                 readonly email: { readonly column: 'email' };
                 readonly id: { readonly column: 'id' };
@@ -1086,6 +1149,7 @@ type ContractBase = Omit<
                 readonly tenantId: { readonly column: 'tenant_id' };
                 readonly tradeName: { readonly column: 'trade_name' };
                 readonly updatedAt: { readonly column: 'updated_at' };
+                readonly updatedBy: { readonly column: 'updated_by' };
               };
             };
           };
@@ -1210,6 +1274,17 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly isActive: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly lastLoginAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-temporal@1';
+                };
+              };
               readonly name: {
                 readonly nullable: false;
                 readonly type: {
@@ -1250,6 +1325,8 @@ type ContractBase = Omit<
                 readonly createdAt: { readonly column: 'created_at' };
                 readonly email: { readonly column: 'email' };
                 readonly id: { readonly column: 'id' };
+                readonly isActive: { readonly column: 'is_active' };
+                readonly lastLoginAt: { readonly column: 'last_login_at' };
                 readonly name: { readonly column: 'name' };
                 readonly passwordHash: { readonly column: 'password_hash' };
                 readonly role: { readonly column: 'role' };

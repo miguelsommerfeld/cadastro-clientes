@@ -23,6 +23,9 @@ export const rolePermissions = {
     ]
 } as const satisfies Record<z.infer<typeof roleSchema>, readonly (typeof permissions)[number][]>;
 
+export const GENERIC_LOGIN_ERROR = "E-mail ou senha inválidos";
+export const GENERIC_AUTH_ERROR = "Não foi possível concluir a operação. Tente novamente.";
+
 export const tenantRequestSchema = z.object({
     tenantName: z.string().trim().min(3, "O nome deve conter ao menos 3 caracteres").max(100),
     slug: z.string().trim().min(1, "O slug é obrigatório")
