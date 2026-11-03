@@ -199,10 +199,24 @@
                   "kind": "scalar"
                 }
               },
+              "createdBy": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "deletedAt": {
                 "nullable": true,
                 "type": {
                   "codecId": "pg/timestamptz-temporal@1",
+                  "kind": "scalar"
+                }
+              },
+              "deletedBy": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
                   "kind": "scalar"
                 }
               },
@@ -289,6 +303,13 @@
                   "codecId": "pg/timestamptz-temporal@1",
                   "kind": "scalar"
                 }
+              },
+              "updatedBy": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
               }
             },
             "relations": {},
@@ -300,8 +321,14 @@
                 "createdAt": {
                   "column": "created_at"
                 },
+                "createdBy": {
+                  "column": "created_by"
+                },
                 "deletedAt": {
                   "column": "deleted_at"
+                },
+                "deletedBy": {
+                  "column": "deleted_by"
                 },
                 "document": {
                   "column": "document"
@@ -329,6 +356,9 @@
                 },
                 "updatedAt": {
                   "column": "updated_at"
+                },
+                "updatedBy": {
+                  "column": "updated_by"
                 }
               },
               "namespaceId": "public",
@@ -499,6 +529,20 @@
                   "kind": "scalar"
                 }
               },
+              "isActive": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "lastLoginAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "kind": "scalar"
+                }
+              },
               "name": {
                 "nullable": false,
                 "type": {
@@ -558,6 +602,12 @@
                 },
                 "id": {
                   "column": "id"
+                },
+                "isActive": {
+                  "column": "is_active"
+                },
+                "lastLoginAt": {
+                  "column": "last_login_at"
                 },
                 "name": {
                   "column": "name"
@@ -671,11 +721,6 @@
               "uniques": [
                 {
                   "columns": [
-                    "id"
-                  ]
-                },
-                {
-                  "columns": [
                     "customer_id"
                   ]
                 }
@@ -704,9 +749,19 @@
                   },
                   "nullable": false
                 },
+                "created_by": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
                 "deleted_at": {
                   "codecId": "pg/timestamptz-temporal@1",
                   "dataType": "pg/timestamptz",
+                  "nullable": true
+                },
+                "deleted_by": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
                   "nullable": true
                 },
                 "document": {
@@ -774,6 +829,11 @@
                   "codecId": "pg/timestamptz-temporal@1",
                   "dataType": "pg/timestamptz",
                   "nullable": true
+                },
+                "updated_by": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
                 }
               },
               "foreignKeys": [],
@@ -795,18 +855,9 @@
               "uniques": [
                 {
                   "columns": [
-                    "id"
-                  ]
-                },
-                {
-                  "columns": [
-                    "email"
-                  ]
-                },
-                {
-                  "columns": [
                     "tenant_id",
-                    "document"
+                    "document",
+                    "email"
                   ]
                 }
               ]
@@ -866,6 +917,11 @@
                   "unique": false
                 }
               ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
               "uniques": []
             },
             "tenants": {
@@ -901,12 +957,12 @@
               },
               "foreignKeys": [],
               "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
               "uniques": [
-                {
-                  "columns": [
-                    "id"
-                  ]
-                },
                 {
                   "columns": [
                     "slug"
@@ -940,6 +996,20 @@
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
                   "nullable": false
+                },
+                "is_active": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": true
+                  },
+                  "nullable": false
+                },
+                "last_login_at": {
+                  "codecId": "pg/timestamptz-temporal@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true
                 },
                 "name": {
                   "codecId": "sql/varchar@1",
@@ -983,25 +1053,20 @@
               "indexes": [
                 {
                   "columns": [
-                    "tenant_id"
+                    "tenant_id",
+                    "email"
                   ],
-                  "name": "users_tenant_id_idx_41c0d441",
-                  "prefix": "users_tenant_id_idx",
+                  "name": "users_tenant_id_email_idx_511e4059",
+                  "prefix": "users_tenant_id_email_idx",
                   "unique": false
                 }
               ],
-              "uniques": [
-                {
-                  "columns": [
-                    "id"
-                  ]
-                },
-                {
-                  "columns": [
-                    "email"
-                  ]
-                }
-              ]
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
             }
           },
           "valueSet": {
@@ -1026,7 +1091,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "891a366bb63d48652e8b87217923ad7f3bfc80263699313e692c0c21246aaefb"
+    "storageHash": "ce84694f2692e5b625433f33d78a6eb78ac1e628e32cdf67d4f484328003c333"
   },
   "execution": {
     "executionHash": "8ec3e0ad7e78f18bc2a71fd162ac635a941999fb049bdf8744f226a9b610dab7",

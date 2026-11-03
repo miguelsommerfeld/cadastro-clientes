@@ -14,27 +14,30 @@ enum Role {
 }
 
 model Customers {
-    id         String        @id @default(uuid()) @unique @map("id")
+    id         String        @id @default(uuid()) @map("id")
     tenantId   String        @relation(id: Tenants) @map("tenant_id")
     personType PersonType    @map("person_type")
     document   VarChar(14)   @map("document")
     name       VarChar(150)  @map("name")
     tradeName  VarChar(150)? @map("trade_name")
     birthDate  Date?         @map("birth_date")
-    email      VarChar(254)? @map("email") @unique
+    email      VarChar(254)? @map("email")
     phone      VarChar(11)   @map("phone")
     createdAt  DateTime      @default(now()) @map("created_at")
     updatedAt  DateTime?     @map("updated_at")
     deletedAt  DateTime?     @map("deleted_at")
+    createdBy  String?       @relation(id: Users) @map("created_by")
+    updatedBy  String?       @relation(id: Users) @map("updated_by")
+    deletedBy  String?       @relation(id: Users) @map("deleted_by")
 
-    @@unique([tenantId, document])
+    @@unique([tenantId, document, email])
     @@index([tenantId])
     @@map("customers")
 }
 
 model Addresses {
-    id         String        @id @default(uuid()) @unique @map("id")
-    customerId String        @relation(id: Customers) @unique @map("customer_id")
+    id         String        @id @default(uuid()) @map("id")
+    customerId String        @unique @map("customer_id")
     zipCode    VarChar(8)    @map("zip_code")
     street     VarChar(150)  @map("street")
     number     VarChar(10)   @default("S/N") @map("number")
@@ -47,21 +50,23 @@ model Addresses {
 }
 
 model Users {
-    id           String       @unique @map("id")
+    id           String       @id @map("id")
     tenantId     String       @relation(id: Tenants) @map("tenant_id")
     role         Role         @map("role")
     name         VarChar(100) @map("name")
-    email        VarChar(254) @unique @map("email")
+    email        VarChar(254) @map("email")
     passwordHash VarChar(253) @map("password_hash")
+    isActive     Boolean      @default(true) @map("is_active")
+    lastLoginAt  DateTime?    @map("last_login_at")
     createdAt    DateTime     @map("created_at")
     updatedAt    DateTime?    @map("updated_at")
 
-    @@index([tenantId])
+    @@index([tenantId, email])
     @@map("users")
 }
 
 model Sessions {
-    id               String       @map("id")
+    id               String       @id @map("id")
     userId           String       @map("user_id")
     refreshTokenHash VarChar(253) @map("refresh_token_hash")
     expiresAt        DateTime     @map("expires_at")
@@ -75,7 +80,7 @@ model Sessions {
 
 
 model Tenants {
-    id        String       @unique @map("id")
+    id        String       @id @map("id")
     name      VarChar(100) @map("name")
     slug      VarChar()    @unique @map("slug")
     createdAt DateTime     @map("created_at")
