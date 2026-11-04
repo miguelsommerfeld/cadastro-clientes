@@ -66,12 +66,14 @@ export function useHomeCustomers(view: CustomerView) {
   }, [load])
 
   useEffect(() => {
+    const normalizedSearch = searchInput.trim()
+    if (normalizedSearch === query) return
     const timer = window.setTimeout(() => {
-      setQuery(searchInput.trim())
+      setQuery(normalizedSearch)
       setPage(1)
     }, 300)
     return () => window.clearTimeout(timer)
-  }, [searchInput])
+  }, [query, searchInput])
 
   useEffect(() => {
     const params = new URLSearchParams()
@@ -113,8 +115,8 @@ export function useHomeCustomers(view: CustomerView) {
   )
 
   useEffect(() => {
-    if (page !== currentPage) setPage(currentPage)
-  }, [currentPage, page])
+    if (!loading && page !== currentPage) setPage(currentPage)
+  }, [currentPage, loading, page])
 
   const changeSort = useCallback((key: CustomerSortKey) => {
     if (sort === key) {

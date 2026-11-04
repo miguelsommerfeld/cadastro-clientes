@@ -41,7 +41,7 @@ export const tenantSchema = z.object({
 
 export const userRequestSchema = z.object({
     username: z.string().trim().min(3, "O nome deve conter ao menos 3 caracteres").max(100),
-    email: z.email().trim().toLowerCase().max(254),
+    email: z.email("Insira um formato de e-mail válido.").trim().toLowerCase().max(254),
     password: z.string().min(8, "A senha deve conter ao menos 8 caracteres").max(128)
 });
 

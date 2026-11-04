@@ -10,18 +10,26 @@ export function getCustomer(id: string) {
   return request<Customer>(withId(apiRoutes.customers, id))
 }
 
-export async function createCustomer(customer: CustomerDraft) {
-  const { customersRequestSchema } = await import('@packages/contracts/customer.schema')
-  const result = customersRequestSchema.safeParse({
-    ...customer,
-    tradeName: customer.personType === 'COMPANY'
-      ? customer.tradeName?.trim() || undefined
-      : undefined,
+export function customerRequestData(customer: CustomerDraft) {
+  return {
+    personType: customer.personType,
+    name: customer.name,
+    document: customer.document,
+    email: customer.email,
+    phone: customer.phone,
+    ...(customer.personType === 'INDIVIDUAL'
+      ? { birthDate: customer.birthDate }
+      : { tradeName: customer.tradeName?.trim() || undefined }),
     address: {
       ...customer.address,
-      number: customer.address.number || null,
+      number: customer.address.number,
     },
-  })
+  }
+}
+
+export async function createCustomer(customer: CustomerDraft) {
+  const { customersRequestSchema } = await import('@packages/contracts/customer.schema')
+  const result = customersRequestSchema.safeParse(customerRequestData(customer))
   if (!result.success) throw validationError(result.error.issues)
 
   return request<Customer>(apiRoutes.customers, {
@@ -37,7 +45,14 @@ export async function updateCustomer(id: string, customer: Partial<CustomerDraft
     phone: customer.phone,
     email: customer.email || null,
     ...(customer.address
-      ? { address: { number: customer.address.number || null } }
+      ? {
+          address: {
+            ...customer.address,
+            zipCode: customer.address.zipCode.replace(/\D/g, ''),
+            number: customer.address.number,
+            complement: customer.address.complement || null,
+          },
+        }
       : {}),
     ...(customer.personType === 'COMPANY'
       ? { tradeName: customer.tradeName || null }

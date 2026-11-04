@@ -32,5 +32,14 @@ export default defineConfig(({ mode }) => {
           }
         : undefined,
     },
+    build: {
+        rollupOptions: {
+          output: {
+            manualChunks(id) {
+              if (id.includes('/node_modules/zod/')) return 'vendor-zod'
+            },
+          },
+        },
+    },
   }
 })

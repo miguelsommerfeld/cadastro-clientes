@@ -6,8 +6,7 @@ export const addressRequestSchema = z.object({
         .regex(/^(?:[0-9]{8}|[0-9]{5}-[0-9]{3})$/, "O CEP deve conter 8 dígitos")
         .transform((zipCode) => zipCode.replace("-", "")),
     street: z.string().trim().min(1, "O logradouro é obrigatório").max(150),
-    number: z.string().trim().max(10).nullable().optional()
-        .transform((number) => number || null),
+    number: z.string().trim().min(1, "O número é obrigatório").max(10),
     complement: z.string().trim().max(100).nullable().optional()
         .transform((complement) => complement || null),
     district: z.string().trim().min(1, "O bairro é obrigatório").max(100),
@@ -26,7 +25,6 @@ export const addressResponseSchema = z.object({
 })
 
 export const addressUpdateSchema = addressRequestSchema
-    .pick({ number: true })
     .partial()
     .strict()
 

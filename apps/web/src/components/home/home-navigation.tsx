@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router'
+import { useAuth } from '@/auth/auth-context'
 import { AppIcon, type AppIconName } from '@/components/app-icon'
 import { Brand } from '@/components/home/brand'
 import type { CustomerView } from '@/types/customer'
@@ -6,20 +7,24 @@ import type { CustomerView } from '@/types/customer'
 type HomeNavigationProps = {
   view: CustomerView
   showMobileNav?: boolean
+  current?: 'active' | 'trash' | 'users'
 }
 
 type NavigationItemProps = {
   active: boolean
   icon: AppIconName
   label: string
-  to: '/' | '/lixeira'
+  to: '/' | '/lixeira' | '/usuarios'
   mobile?: boolean
 }
 
 export function HomeNavigation({
   view,
   showMobileNav = true,
+  current = view,
 }: HomeNavigationProps) {
+  const auth = useAuth()
+  const showUsers = auth.hasPermission('user:manage')
   return (
     <>
       <aside className="hidden w-[238px] shrink-0 flex-col border-r border-slate-200 bg-white px-5 py-7 md:flex">
@@ -29,17 +34,25 @@ export function HomeNavigation({
         </p>
         <nav aria-label="Navegação principal" className="space-y-1">
           <NavigationItem
-            active={view === 'active'}
+            active={current === 'active'}
             icon="users"
             label="Clientes"
             to="/"
           />
           <NavigationItem
-            active={view === 'trash'}
+            active={current === 'trash'}
             icon="trash"
             label="Lixeira"
             to="/lixeira"
           />
+          {showUsers && (
+            <NavigationItem
+              active={current === 'users'}
+              icon="users"
+              label="Usuários"
+              to="/usuarios"
+            />
+          )}
         </nav>
         <div className="mt-auto rounded-2xl bg-[#edf7f5] p-4">
           <p className="text-sm font-bold text-[#145c54]">Tudo em ordem</p>
@@ -52,22 +65,33 @@ export function HomeNavigation({
       {showMobileNav && (
         <nav
           aria-label="Navegação móvel"
-          className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-2 border-t border-slate-200 bg-white/95 px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-4px_16px_rgba(15,23,42,0.05)] backdrop-blur md:hidden"
+          className={`fixed inset-x-0 bottom-0 z-30 grid border-t border-slate-200 bg-white/95 px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-4px_16px_rgba(15,23,42,0.05)] backdrop-blur md:hidden ${
+            showUsers ? 'grid-cols-3' : 'grid-cols-2'
+          }`}
         >
           <NavigationItem
-            active={view === 'active'}
+            active={current === 'active'}
             icon="users"
             label="Clientes"
             to="/"
             mobile
           />
           <NavigationItem
-            active={view === 'trash'}
+            active={current === 'trash'}
             icon="trash"
             label="Lixeira"
             to="/lixeira"
             mobile
           />
+          {showUsers && (
+            <NavigationItem
+              active={current === 'users'}
+              icon="users"
+              label="Usuários"
+              to="/usuarios"
+              mobile
+            />
+          )}
         </nav>
       )}
     </>

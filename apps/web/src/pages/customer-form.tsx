@@ -7,7 +7,12 @@ import {
   type CustomerFormField,
   type CustomerFormSection,
 } from '@/components/home/customer-form-fields'
-import { createCustomer, getCustomer, updateCustomer } from '@/services/customer.service'
+import {
+  createCustomer,
+  customerRequestData,
+  getCustomer,
+  updateCustomer,
+} from '@/services/customer.service'
 import { ApiError } from '@/services/api.client'
 import type { Customer, CustomerDraft } from '@/types/customer'
 import {
@@ -174,7 +179,20 @@ export function CustomerFormPage({ customerId }: { customerId?: string }) {
     let result
     if (stepToValidate === wizardStep.identity) {
       const { customerIdentitySchema } = await import('@packages/contracts/customer.schema')
-      result = customerIdentitySchema.safeParse(draft)
+      const identity = draft.personType === 'INDIVIDUAL'
+        ? {
+            personType: draft.personType,
+            name: draft.name,
+            document: draft.document,
+            birthDate: draft.birthDate,
+          }
+        : {
+            personType: draft.personType,
+            name: draft.name,
+            document: draft.document,
+            tradeName: draft.tradeName?.trim() || undefined,
+          }
+      result = customerIdentitySchema.safeParse(identity)
     } else if (stepToValidate === wizardStep.contact) {
       const { customerContactSchema } = await import('@packages/contracts/customer.schema')
       result = customerContactSchema.safeParse(draft)
@@ -182,7 +200,7 @@ export function CustomerFormPage({ customerId }: { customerId?: string }) {
       const { addressRequestSchema } = await import('@packages/contracts/address.schema')
       result = addressRequestSchema.safeParse({
         ...draft.address,
-        number: draft.address.number || null,
+        number: draft.address.number,
       })
     } else if (editing) {
       const { customerUpdateSchema } = await import('@packages/contracts/customer.schema')
@@ -193,17 +211,16 @@ export function CustomerFormPage({ customerId }: { customerId?: string }) {
         ...(draft.personType === 'COMPANY'
           ? { tradeName: draft.tradeName?.trim() || null }
           : { birthDate: draft.birthDate || null }),
-        address: { number: draft.address.number || null },
+        address: {
+          ...draft.address,
+          zipCode: draft.address.zipCode.replace(/\D/g, ''),
+          number: draft.address.number,
+          complement: draft.address.complement || null,
+        },
       })
     } else {
       const { customersRequestSchema } = await import('@packages/contracts/customer.schema')
-      result = customersRequestSchema.safeParse({
-        ...draft,
-        tradeName: draft.personType === 'COMPANY'
-          ? draft.tradeName?.trim() || undefined
-          : undefined,
-        address: { ...draft.address, number: draft.address.number || null },
-      })
+      result = customersRequestSchema.safeParse(customerRequestData(draft))
     }
 
     if (result.success) {
