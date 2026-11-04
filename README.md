@@ -29,6 +29,7 @@ Aplicação para cadastro e gerenciamento de clientes pessoa física e pessoa ju
 - Exclusão permanente de clientes removidos.
 - Verificação de saúde da API e documentação interativa via Swagger.
 - Cadastro de conta e tenant, login e manutenção de sessão com JWT e cookies seguros.
+- Logs centralizados de banco, API e interface no Grafana, coletados pelo Alloy e armazenados no Loki.
 
 As telas ficam disponíveis em:
 
@@ -48,6 +49,7 @@ Caminhos desconhecidos exibem uma página 404.
 | Persistência | PostgreSQL 18, Prisma ORM |
 | Interface web | React 19, TypeScript, Vite 8 |
 | Servidor web | Nginx |
+| Logs | Grafana Alloy, Loki e Grafana |
 | Execução local | Docker e Docker Compose |
 
 ## Estrutura do projeto
@@ -67,6 +69,10 @@ Caminhos desconhecidos exibem uma página 404.
 │   └── web/                    # Interface React servida pelo Nginx
 ├── packages/
 │   └── contracts/              # Schemas Zod compartilhados
+├── observability/
+│   ├── alloy/                  # Coleta dos logs dos containers
+│   ├── grafana/                # Provisionamento do datasource e dashboard
+│   └── loki/                   # Retenção e armazenamento de logs
 ├── docker-compose.yml
 ├── start.sh                    # Inicialização e comandos auxiliares
 └── .env.example
@@ -98,6 +104,7 @@ O script `start.sh` verifica os pré-requisitos antes de iniciar os serviços. N
 
    `DB_URL` é a URL usada pela API e pelas migrações. No ambiente do Compose, o host do banco é `db`. Use uma senha local segura e mantenha o arquivo `.env` fora do controle de versão.
    Configure também `JWT_SECRET` com pelo menos 32 caracteres aleatórios, por exemplo com `openssl rand -base64 32`.
+   Troque o valor de exemplo de `GRAFANA_ADMIN_PASSWORD` por uma senha local forte e, se desejar, ajuste `GRAFANA_ADMIN_USER`.
    O `.env.example` define `NODE_ENV=development` para uso local; em outros ambientes, use `NODE_ENV=production` para ativar o atributo `Secure` nos cookies.
 
 3. Inicie a aplicação a partir da raiz do repositório:
@@ -106,7 +113,7 @@ O script `start.sh` verifica os pré-requisitos antes de iniciar os serviços. N
    ./start.sh
    ```
 
-   O script constrói as imagens, inicia PostgreSQL, API e interface web, aplica as migrações do banco e aguarda a API ficar saudável. Na primeira execução, o Docker pode levar alguns minutos para baixar imagens e construir os serviços.
+   O script constrói as imagens, inicia PostgreSQL, API, interface web e a stack de logs, aplica as migrações do banco e aguarda a API e o Grafana ficarem saudáveis. Na primeira execução, o Docker pode levar alguns minutos para baixar imagens e construir os serviços.
 
 ## URLs locais
 
@@ -116,6 +123,13 @@ O script `start.sh` verifica os pré-requisitos antes de iniciar os serviços. N
 | API | [`http://localhost:3333`](http://localhost:3333) |
 | Swagger UI | [`http://localhost:3333/docs`](http://localhost:3333/docs) |
 | Health check | [`http://localhost:3333/health`](http://localhost:3333/health) |
+| Grafana | [`http://localhost:3000`](http://localhost:3000) |
+
+### Logs centralizados
+
+API, Nginx e PostgreSQL escrevem na saída padrão. Um único agente Alloy lê os logs dos containers e os encaminha ao Loki; Grafana já inicia com a fonte de dados e o dashboard **Visão geral** configurados. Os logs ficam persistidos em volumes Docker, com retenção de sete dias no Loki. A API registra `x-request-id` em cada resposta e em cada evento de requisição; o mesmo identificador aparece em erros 500 no Grafana. Tokens, cookies e campos de senha são redigidos pelo logger.
+
+O dashboard permite filtrar por serviço e consultar logs por tenant informando seu ID. `reqId`, `userId` e `tenantId` são mantidos no corpo do log, não como labels do Loki. As credenciais do Grafana são configuradas por `GRAFANA_ADMIN_USER` e `GRAFANA_ADMIN_PASSWORD` no `.env`.
 
 ## Front-end
 
@@ -288,10 +302,10 @@ Os tokens de autenticação são enviados somente em cookies `httpOnly` com `Sam
 ./start.sh --help   # Exibe as opções disponíveis
 ./start.sh --logs   # Acompanha os logs dos serviços
 ./start.sh --stop   # Para os serviços, preservando os dados
-./start.sh --reset  # Apaga os volumes do banco e inicia tudo novamente
+./start.sh --reset  # Apaga os dados do banco e inicia tudo novamente, preservando logs
 ```
 
-> **Atenção:** `./start.sh --reset` apaga permanentemente os dados persistidos no banco. O script solicita que você digite `RESET` antes de continuar.
+> **Atenção:** `./start.sh --reset` apaga permanentemente os dados persistidos no banco, mas preserva os logs coletados. O script solicita que você digite `RESET` antes de continuar.
 
 Os pacotes também têm comandos próprios:
 

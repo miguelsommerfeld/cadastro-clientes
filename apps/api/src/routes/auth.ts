@@ -11,8 +11,16 @@ import {
 } from "@packages/contracts/auth.schema";
 import { clearAuthCookies, sendAuthError, formatValidationError } from "@/helpers/auth";
 
+const problemDetailsSchema = z.object({
+    type: z.string(),
+    title: z.string(),
+    status: z.number(),
+    detail: z.string(),
+    requestId: z.string()
+});
+
 const authRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedInstance) {
-    server.setErrorHandler((error, _request, reply) => {
+    server.setErrorHandler((error, request, reply) => {
         if (
             typeof error === "object" &&
             error !== null &&
@@ -25,6 +33,24 @@ const authRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedIn
             });
         }
 
+        const statusCode =
+            error instanceof Error &&
+            "statusCode" in error &&
+            typeof error.statusCode === "number"
+                ? error.statusCode
+                : 500;
+
+        if (statusCode >= 500) {
+            request.log.error({ err: error }, "Unhandled request error");
+            return reply.code(500).send({
+                type: "/problems/internal-server-error",
+                title: "Internal Server Error",
+                status: 500,
+                detail: "Não foi possível concluir a solicitação.",
+                requestId: request.id
+            });
+        }
+
         return reply.send(error);
     });
 
@@ -34,7 +60,8 @@ const authRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedIn
             response: {
                 201: authSessionUserSchema,
                 400: authErrorSchema,
-                409: authErrorSchema
+                409: authErrorSchema,
+                500: problemDetailsSchema
             }
         }
     }, async (request, reply) => {
@@ -42,6 +69,7 @@ const authRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedIn
 
         if ("code" in result) return sendAuthError(reply, result);
 
+        request.user = await server.authController.verifyAccessToken(result.accessToken);
         reply.setCookie("access_token", result.accessToken, accessCookie);
         reply.setCookie("refresh_token", result.refreshToken, refreshCookie);
 
@@ -69,7 +97,8 @@ const authRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedIn
                 200: authSessionUserSchema,
                 400: authErrorSchema,
                 401: authErrorSchema,
-                429: authErrorSchema
+                429: authErrorSchema,
+                500: problemDetailsSchema
             }
         }
     }, async (request, reply) => {
@@ -77,6 +106,7 @@ const authRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedIn
 
         if ("code" in result) return sendAuthError(reply, result);
 
+        request.user = await server.authController.verifyAccessToken(result.accessToken);
         reply.setCookie("access_token", result.accessToken, accessCookie);
         reply.setCookie("refresh_token", result.refreshToken, refreshCookie);
 
@@ -88,6 +118,7 @@ const authRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedIn
             response: {
                 200: authSessionUserSchema,
                 401: authErrorSchema,
+                500: problemDetailsSchema
             }
         }
     }, async (request, reply) => {
@@ -109,6 +140,7 @@ const authRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedIn
             return sendAuthError(reply, result);
         }
 
+        request.user = await server.authController.verifyAccessToken(result.accessToken);
         reply.setCookie("access_token", result.accessToken, accessCookie);
         reply.setCookie("refresh_token", result.refreshToken, refreshCookie);
 
@@ -118,7 +150,8 @@ const authRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedIn
     server.post("/auth/logout", {
         schema: {
             response: {
-                204: z.null()
+                204: z.null(),
+                500: problemDetailsSchema
             }
         }
     }, async (request, reply) => {
@@ -128,6 +161,7 @@ const authRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedIn
         if (accessToken) {
             try {
                 claims = await server.authController.verifyAccessToken(accessToken);
+                request.user = claims;
             } catch (error) {
                 request.log.info({ err: error }, "Ignoring invalid access token during logout");
             }
@@ -146,6 +180,7 @@ const authRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedIn
             response: {
                 200: authSessionUserSchema,
                 204: z.null(),
+                500: problemDetailsSchema
             }
         }
     }, async (request, reply) => {
@@ -154,6 +189,7 @@ const authRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedIn
 
         try {
             const claims = await server.authController.verifyAccessToken(accessToken);
+            request.user = claims;
             const session = await server.authController.getSession(claims);
 
             if (session && "code" in session) return sendAuthError(reply, session);

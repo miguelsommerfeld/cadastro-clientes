@@ -5,6 +5,8 @@ readonly SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 readonly API_HEALTH_TIMEOUT=180
 readonly POLL_INTERVAL=5
 readonly API_SERVICE="api"
+readonly GRAFANA_SERVICE="grafana"
+readonly DATABASE_VOLUME="cadastro-clientes_postgres_data"
 LOADING_PID=""
 COMPOSE_OUTPUT_FILE=""
 
@@ -16,12 +18,12 @@ Opções:
   --help    Mostra esta ajuda.
   --stop    Para os serviços sem apagar os dados.
   --logs    Acompanha os logs dos serviços.
-  --reset   Apaga o banco de dados e inicia a aplicação novamente
-            (exige confirmação explícita).
+  --reset   Apaga os dados do banco e inicia a aplicação novamente
+            (exige confirmação explícita; preserva os logs).
 
 Sem opções, cria .env a partir de .env.example se necessário, constrói
-as imagens, inicia os serviços e aguarda a API ficar saudável (limite:
-180 segundos).
+as imagens, inicia os serviços e aguarda a API e o Grafana ficarem
+saudáveis (limite de 180 segundos para cada serviço).
 EOF
 }
 
@@ -126,14 +128,15 @@ compose() {
   docker compose --project-directory "$SCRIPT_DIR" "$@"
 }
 
-wait_for_api() {
+wait_for_service() {
+  local service="$1"
   local elapsed=0
   local container_id
   local health_status
   local wait_step
 
   while (( elapsed < API_HEALTH_TIMEOUT )); do
-    container_id="$(compose ps -q "$API_SERVICE" 2>/dev/null || true)"
+    container_id="$(compose ps -q "$service" 2>/dev/null || true)"
     if [[ -n "$container_id" ]]; then
       health_status="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}no-healthcheck{{end}}' "$container_id" 2>/dev/null || true)"
       if [[ "$health_status" == "healthy" ]]; then
@@ -141,7 +144,7 @@ wait_for_api() {
       fi
 
       if [[ "$health_status" == "no-healthcheck" ]]; then
-        printf 'A API não possui healthcheck configurado.\n' >&2
+        printf 'O serviço %s não possui healthcheck configurado.\n' "$service" >&2
         return 1
       fi
     fi
@@ -154,7 +157,8 @@ wait_for_api() {
     elapsed=$((elapsed + wait_step))
   done
 
-  printf 'Tempo limite de %s segundos excedido ao aguardar a API.\n' "$API_HEALTH_TIMEOUT" >&2
+  printf 'Tempo limite de %s segundos excedido ao aguardar o serviço %s.\n' \
+    "$API_HEALTH_TIMEOUT" "$service" >&2
   return 1
 }
 
@@ -188,10 +192,17 @@ start_application() {
     return 1
   fi
 
-  if ! wait_for_api; then
+  if ! wait_for_service "$API_SERVICE"; then
     stop_loading
     printf 'Logs relevantes dos serviços:\n' >&2
-    compose logs --tail=100 api db web >&2 || true
+    compose logs --tail=100 api db web loki alloy grafana >&2 || true
+    return 1
+  fi
+
+  if ! wait_for_service "$GRAFANA_SERVICE"; then
+    stop_loading
+    printf 'Logs relevantes dos serviços:\n' >&2
+    compose logs --tail=100 api db web loki alloy grafana >&2 || true
     return 1
   fi
 
@@ -203,6 +214,7 @@ Aplicação pronta!
   Interface:    http://localhost:8080
   API:          http://localhost:3333
   Documentação: http://localhost:3333/docs
+  Logs:         http://localhost:3000
 EOF
 }
 
@@ -250,7 +262,10 @@ main() {
       compose logs --follow
       ;;
     --reset)
-      compose down --volumes
+      compose down
+      if docker volume inspect "$DATABASE_VOLUME" >/dev/null 2>&1; then
+        docker volume rm "$DATABASE_VOLUME" >/dev/null
+      fi
       start_application
       ;;
     *)
