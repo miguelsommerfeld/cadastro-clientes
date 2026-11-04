@@ -13,12 +13,13 @@ import { fileURLToPath } from "node:url";
 loadEnv({ path: fileURLToPath(new URL("../../../.env", import.meta.url)) });
 
 const { env } = await import("../config/env.ts");
-const [{ default: dependencies }, { default: healthcheck }, { default: customersRoutes }, { default: authRoutes }] =
+const [{ default: dependencies }, { default: healthcheck }, { default: customersRoutes }, { default: authRoutes }, { default: usersRoutes }] =
     await Promise.all([
         import("../config/dependencies.ts"),
         import("./routes/healthcheck.ts"),
         import("./routes/customers.ts"),
-        import("./routes/auth.ts")
+        import("./routes/auth.ts"),
+        import("./routes/users.ts")
     ]);
 
 const server = Fastify({
@@ -169,6 +170,7 @@ server.register(cors, {
 server.register(dependencies);
 server.register(healthcheck);
 server.register(customersRoutes, { prefix: "/api/v1/" });
+server.register(usersRoutes, { prefix: "/api/v1/" });
 server.register(authRoutes, { prefix: "/api/v1/" });
 
 await server.listen({ port: 3333, host: "0.0.0.0" });
