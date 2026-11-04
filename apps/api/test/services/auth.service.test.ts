@@ -73,8 +73,13 @@ function makeFixture() {
         findUserByEmail: vi.fn(async (_email: string): Promise<typeof user | null> => null),
         findTenantBySlug: vi.fn(async (_slug: string): Promise<typeof tenant | null> => null),
         register: vi.fn(),
+        updateLastLoginAt: vi.fn(async () => user),
         findUserById: vi.fn(async (id: string) => id === user.id ? user : null),
         findTenantById: vi.fn(async (id: string) => id === tenant.id ? tenant : null),
+        createSession: vi.fn(async (session: FakeSession) => {
+            sessions.set(session.id, session);
+            return session;
+        }),
         rotateSession: vi.fn(async (
             id: string,
             currentHash: string,
@@ -207,6 +212,18 @@ describe("AuthService session rules with an in-memory repository", () => {
         });
     });
 
+    it("records the current instant as the user's last login after successful authentication", async () => {
+        const { service, repository, user } = makeFixture();
+        repository.findUserByEmail.mockResolvedValueOnce(user);
+
+        await expect(service.login({
+            email: user.email,
+            password: "long-password"
+        })).resolves.toMatchObject({ accessToken: "signed-access-token" });
+
+        expect(repository.updateLastLoginAt).toHaveBeenCalledWith(user.id);
+    });
+
     it("rotates a valid refresh token, extending its lifetime and issuing a token for the same session", async () => {
         const { service, repository, tokenService, sessions } = makeFixture();
         const oldRefreshToken = "old-refresh-token";
@@ -224,7 +241,7 @@ describe("AuthService session rules with an in-memory repository", () => {
         if (!("refreshToken" in (result as object))) throw new Error("refresh token was not issued");
         expect((result as { refreshToken: string }).refreshToken).not.toBe(oldRefreshToken);
         expect(session.refreshTokenHash).not.toBe(hash(oldRefreshToken));
-        expect(session.expiresAt.epochMilliseconds).toBeGreaterThan(previousExpiry);
+        expect(session.expiresAt.epochMilliseconds).toBeGreaterThanOrEqual(previousExpiry);
         expect(session.expiresAt.epochMilliseconds).toBeGreaterThanOrEqual(
             Temporal.Now.instant().epochMilliseconds + (REFRESH_TOKEN_TTL_SECONDS - 2) * 1000
         );

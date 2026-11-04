@@ -14,7 +14,7 @@ describe("repository and controller forwarding", () => {
     it("forwards every AuthRepository operation to the matching model method", async () => {
         const methods = [
             "register", "findUserByEmail", "findUserById", "findTenantById",
-            "findTenantBySlug", "createSession", "findValidSessionByRefreshTokenHash",
+            "findTenantBySlug", "updateLastLoginAt", "createSession", "findValidSessionByRefreshTokenHash",
             "findSessionById", "rotateSession", "revokeSessionByRefreshTokenHash",
             "revokeSessionById"
         ];
@@ -26,6 +26,7 @@ describe("repository and controller forwarding", () => {
             findUserById: ["user"],
             findTenantById: ["tenant"],
             findTenantBySlug: ["slug"],
+            updateLastLoginAt: ["user"],
             createSession: [{ session: true }],
             findValidSessionByRefreshTokenHash: ["refresh-hash"],
             findSessionById: ["session"],

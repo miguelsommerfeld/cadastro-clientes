@@ -74,6 +74,7 @@ export class AuthService extends Service {
             const tenant = await this.repository.findTenantById(user.tenantId);
             if (!tenant) return this.toApplicationErrorResponse(new ApplicationError(401, GENERIC_AUTH_ERROR));
 
+            await this.repository.updateLastLoginAt(user.id);
             const refreshToken = this.createRefreshToken();
             const session = await this.createSession(user.id, this.hashRefreshToken(refreshToken));
             return await this.toAuthTokens(user, tenant, session.id, refreshToken);

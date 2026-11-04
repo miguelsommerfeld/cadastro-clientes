@@ -88,6 +88,18 @@ describe("AuthModel persistence behavior", () => {
         await expect(model.findUserById("missing")).resolves.toBeNull();
     });
 
+    it("records the current instant as the user's last login", async () => {
+        const user: { id: string; lastLoginAt: Temporal.Instant | null } = { id: userId, lastLoginAt: null };
+        tables.Users.push(user);
+        const beforeUpdate = Temporal.Now.instant();
+
+        await model.updateLastLoginAt(userId);
+
+        const afterUpdate = Temporal.Now.instant();
+        expect(user.lastLoginAt?.epochMilliseconds).toBeGreaterThanOrEqual(beforeUpdate.epochMilliseconds);
+        expect(user.lastLoginAt?.epochMilliseconds).toBeLessThanOrEqual(afterUpdate.epochMilliseconds);
+    });
+
     it("creates a session with a bounded refresh-token hash", async () => {
         const now = Temporal.Now.instant();
         const created = await model.createSession({

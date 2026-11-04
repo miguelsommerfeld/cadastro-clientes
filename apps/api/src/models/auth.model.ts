@@ -75,6 +75,12 @@ export class AuthModel extends Model {
             .first();
     }
 
+    public updateLastLoginAt(userId: string) {
+        return this.db.orm.public.Users
+            .where({ id: userId })
+            .update({ lastLoginAt: Temporal.Now.instant() });
+    }
+
     public createSession(session: {
         id: string;
         userId: string;

@@ -23,6 +23,10 @@ export class AuthRepository {
         return this.model.findTenantBySlug(slug);
     }
 
+    public updateLastLoginAt(userId: string) {
+        return this.model.updateLastLoginAt(userId);
+    }
+
     public createSession(session: Parameters<AuthModel["createSession"]>[0]) {
         return this.model.createSession(session);
     }
