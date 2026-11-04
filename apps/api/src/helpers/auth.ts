@@ -4,6 +4,7 @@ import type {
 } from "@packages/contracts/jwt.schema";
 import { FastifyReply } from "fastify";
 import type { ApplicationErrorResponse } from "@/services/service";
+import { makeProblemDetails } from "@/helpers/problem-details";
 
 export function clearAuthCookies(
     reply: FastifyReply,
@@ -22,9 +23,16 @@ export function clearAuthCookies(
 
 export function sendAuthError(
     reply: FastifyReply,
-    error: ApplicationErrorResponse
+    error: ApplicationErrorResponse,
+    requestId: string
 ) {
-    return reply.code(error.code).send(error);
+    const detail = Number(error.code) === 500
+        ? "Não foi possível concluir a solicitação."
+        : error.message;
+    return reply
+        .code(error.code)
+        .type("application/problem+json")
+        .send(makeProblemDetails(error.code, detail, requestId));
 }
 
 export function formatValidationError(error: unknown): string {

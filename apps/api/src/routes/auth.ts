@@ -5,53 +5,39 @@ import { accessCookie, refreshCookie } from "@config/jwt";
 import {
     authRequestSchema,
     authSessionUserSchema,
-    authErrorSchema,
     loginRequestSchema,
     type AccessTokenClaims
 } from "@packages/contracts/auth.schema";
+import { problemDetailsSchema } from "@packages/contracts/problem-details.schema";
 import { clearAuthCookies, sendAuthError, formatValidationError } from "@/helpers/auth";
-
-const problemDetailsSchema = z.object({
-    type: z.string(),
-    title: z.string(),
-    status: z.number(),
-    detail: z.string(),
-    requestId: z.string()
-});
+import {
+    getHttpErrorMessage,
+    getHttpErrorStatus,
+    sendProblem,
+    validationProblemErrors
+} from "@/helpers/problem-details";
 
 const authRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedInstance) {
     server.setErrorHandler((error, request, reply) => {
-        if (
-            typeof error === "object" &&
-            error !== null &&
-            "statusCode" in error &&
-            error.statusCode === 400
-        ) {
-            return reply.code(400).send({
-                code: 400,
-                message: formatValidationError(error)
-            });
-        }
-
-        const statusCode =
-            error instanceof Error &&
-            "statusCode" in error &&
-            typeof error.statusCode === "number"
-                ? error.statusCode
-                : 500;
+        const statusCode = getHttpErrorStatus(error) ?? 500;
 
         if (statusCode >= 500) {
             request.log.error({ err: error }, "Unhandled request error");
-            return reply.code(500).send({
-                type: "/problems/internal-server-error",
-                title: "Internal Server Error",
-                status: 500,
-                detail: "Não foi possível concluir a solicitação.",
-                requestId: request.id
-            });
+            return sendProblem(
+                reply,
+                request,
+                statusCode === 503 ? 503 : 500,
+                "Não foi possível concluir a solicitação."
+            );
         }
 
-        return reply.send(error);
+        const detail = statusCode === 400
+            ? formatValidationError(error)
+            : getHttpErrorMessage(error)
+                ?? (statusCode === 429
+                    ? "O limite de tentativas foi excedido. Tente novamente mais tarde."
+                    : "Requisição inválida.");
+        return sendProblem(reply, request, statusCode, detail, validationProblemErrors(error));
     });
 
     server.post("/auth/register", {
@@ -59,15 +45,16 @@ const authRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedIn
             body: authRequestSchema,
             response: {
                 201: authSessionUserSchema,
-                400: authErrorSchema,
-                409: authErrorSchema,
-                500: problemDetailsSchema
+                400: problemDetailsSchema,
+                409: problemDetailsSchema,
+                500: problemDetailsSchema,
+                503: problemDetailsSchema
             }
         }
     }, async (request, reply) => {
         const result = await server.authController.register(request.body);
 
-        if ("code" in result) return sendAuthError(reply, result);
+        if ("code" in result) return sendAuthError(reply, result, request.id);
 
         request.user = await server.authController.verifyAccessToken(result.accessToken);
         reply.setCookie("access_token", result.accessToken, accessCookie);
@@ -81,6 +68,10 @@ const authRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedIn
             rateLimit: {
                 max: 5,
                 timeWindow: 60_000,
+                errorResponseBuilder: () => ({
+                    statusCode: 429,
+                    message: "O limite de tentativas foi excedido. Tente novamente mais tarde."
+                }),
                 keyGenerator: (request) => {
                     const body = request.body;
                     const email = typeof body === "object" && body !== null &&
@@ -95,16 +86,17 @@ const authRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedIn
             body: loginRequestSchema,
             response: {
                 200: authSessionUserSchema,
-                400: authErrorSchema,
-                401: authErrorSchema,
-                429: authErrorSchema,
-                500: problemDetailsSchema
+                400: problemDetailsSchema,
+                401: problemDetailsSchema,
+                429: problemDetailsSchema,
+                500: problemDetailsSchema,
+                503: problemDetailsSchema
             }
         }
     }, async (request, reply) => {
         const result = await server.authController.login(request.body);
 
-        if ("code" in result) return sendAuthError(reply, result);
+        if ("code" in result) return sendAuthError(reply, result, request.id);
 
         request.user = await server.authController.verifyAccessToken(result.accessToken);
         reply.setCookie("access_token", result.accessToken, accessCookie);
@@ -117,8 +109,9 @@ const authRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedIn
         schema: {
             response: {
                 200: authSessionUserSchema,
-                401: authErrorSchema,
-                500: problemDetailsSchema
+                401: problemDetailsSchema,
+                500: problemDetailsSchema,
+                503: problemDetailsSchema
             }
         }
     }, async (request, reply) => {
@@ -127,17 +120,14 @@ const authRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedIn
         if (!refreshToken) {
             clearAuthCookies(reply, accessCookie, refreshCookie);
 
-            return reply.code(401).send({
-                code: 401,
-                message: "Sessão inválida ou expirada"
-            });
+            return sendProblem(reply, request, 401, "Sessão inválida ou expirada.");
         }
 
         const result = await server.authController.refresh(refreshToken);
 
         if ("code" in result) {
             if (result.code === 401) clearAuthCookies(reply, accessCookie, refreshCookie);
-            return sendAuthError(reply, result);
+            return sendAuthError(reply, result, request.id);
         }
 
         request.user = await server.authController.verifyAccessToken(result.accessToken);
@@ -151,7 +141,8 @@ const authRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedIn
         schema: {
             response: {
                 204: z.null(),
-                500: problemDetailsSchema
+                500: problemDetailsSchema,
+                503: problemDetailsSchema
             }
         }
     }, async (request, reply) => {
@@ -168,7 +159,7 @@ const authRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedIn
         }
 
         const result = await server.authController.logout(accessToken, claims);
-        if (result && "code" in result) return sendAuthError(reply, result);
+        if (result && "code" in result) return sendAuthError(reply, result, request.id);
 
         clearAuthCookies(reply, accessCookie, refreshCookie);
 
@@ -180,7 +171,8 @@ const authRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedIn
             response: {
                 200: authSessionUserSchema,
                 204: z.null(),
-                500: problemDetailsSchema
+                500: problemDetailsSchema,
+                503: problemDetailsSchema
             }
         }
     }, async (request, reply) => {
@@ -192,7 +184,7 @@ const authRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedIn
             request.user = claims;
             const session = await server.authController.getSession(claims);
 
-            if (session && "code" in session) return sendAuthError(reply, session);
+            if (session && "code" in session) return sendAuthError(reply, session, request.id);
             if (session === null) return reply.code(204).send(null);
 
             return reply.code(200).send(session);

@@ -73,7 +73,7 @@ export class CustomerService extends Service {
     ): Promise<DocumentValidation | ApplicationErrorResponse> {
         if (!this.isDocumentValid(customerDocument)) {
             return {
-                status: 409,
+                status: 400,
                 message: "O documento inserido deve ser válido"
             };
         }
@@ -86,7 +86,7 @@ export class CustomerService extends Service {
 
         if (!await this.repository.isDocumentUnique(claims.tid, customerDocument)) {
             return {
-                status: 400,
+                status: 409,
                 message: "O documento inserido já foi registrado"
             };
         }

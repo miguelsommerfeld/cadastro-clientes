@@ -9,7 +9,10 @@ import {
 
 const customerFields = {
     name: z.string().trim().min(3, "O nome deve conter ao menos 3 caracteres").max(150),
-    email: z.email("Insira um formato de e-mail válido para realizar o cadastro").max(254),
+    email: z.email("Insira um formato de e-mail válido para realizar o cadastro")
+        .trim()
+        .toLowerCase()
+        .max(254),
     phone: z.phone().country('BR')
         .transform((value) => value.nationalNumber.replace(/\D/g, ''))
         .refine((phone) => phone.length >= 10 && phone.length <= 11, {
@@ -39,7 +42,7 @@ const companyCustomerFields = {
     personType: z.literal('COMPANY'),
     document: z.string("O CNPJ inserido precisa ser válido")
         .refine((document) => cnpj.isValid(document), { error: "CNPJ inválido" })
-        .transform((document) => document.replace(/\D/g, '')),
+        .transform((document) => document.replace(/[^0-9a-z]/gi, "").toUpperCase()),
     tradeName: z.string().trim().min(1).max(150).optional()
 }
 
@@ -62,12 +65,6 @@ export const customerContactSchema = z.object({
     email: customerFields.email,
     phone: customerFields.phone
 })
-
-const customerDocumentUpdateSchema = z.string("O documento inserido precisa ser válido")
-    .refine((document) => cpf.isValid(document) || cnpj.isValid(document), {
-        error: "CPF ou CNPJ inválido"
-    })
-    .transform((document) => document.replace(/\D/g, ''))
 
 export const customerRegistrationSchema = z.discriminatedUnion('personType', [
     z.object(individualCustomerFields).strict(),
@@ -109,7 +106,6 @@ export const customersResponseSchema = z.discriminatedUnion('personType', [
 
 export const customerUpdateSchema = z.object({
     ...customerFields,
-    document: customerDocumentUpdateSchema,
     tradeName: z.string().trim().min(1).max(150).nullable(),
     birthDate: birthDateSchema.nullable(),
     email: customerFields.email.nullable(),
