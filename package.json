@@ -9,6 +9,7 @@
   "scripts": {
     "test": "npm run test --workspaces --if-present",
     "test:e2e": "bash ./apps/e2e/run-qa.sh",
+    "seed": "bash ./start.sh --seed",
     "clear": "rm -rf node_modules && rm -rf apps/**/node_modules && rm -rf packages/**/node_modules && rm -rf package-lock.json"
   },
   "allowScripts": {

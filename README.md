@@ -14,6 +14,7 @@ Aplicação para cadastro e gerenciamento de clientes pessoa física e pessoa ju
 - [URLs locais](#urls-locais)
 - [Front-end](#front-end)
 - [API](#api)
+- [Seeds de demonstração](#seeds-de-demonstração)
 - [Testes](#testes)
 - [Modelos e validações](#modelos-e-validações)
 - [Comandos úteis](#comandos-úteis)
@@ -72,8 +73,8 @@ Caminhos desconhecidos exibem uma página 404.
 │   │       ├── repositories/   # Camada de repositório
 │   │       ├── routes/         # Rotas Fastify
 │   │       └── services/       # Regras de negócio
+│   ├── e2e/                    # QA da interface com Playwright
 │   └── web/                    # Interface React servida pelo Nginx
-├── e2e/                        # QA da interface com Playwright
 ├── packages/
 │   └── contracts/              # Schemas Zod compartilhados
 ├── observability/
@@ -90,7 +91,7 @@ Caminhos desconhecidos exibem uma página 404.
 - Docker Engine ou Docker Desktop em execução.
 - Docker Compose v2.24 ou superior.
 
-O script `start.sh` verifica os pré-requisitos antes de iniciar os serviços. Não é necessário instalar Node.js ou PostgreSQL na máquina para usar a configuração via Docker Compose.
+O script `start.sh` verifica os pré-requisitos antes de iniciar os serviços. Não é necessário instalar Node.js ou PostgreSQL na máquina para usar a configuração via Docker Compose. Quando o `.env` não existe, ele é criado automaticamente a partir de `.env.example` e seus valores padrão já permitem executar a aplicação localmente.
 
 ## Configuração e inicialização
 
@@ -111,6 +112,7 @@ O script `start.sh` verifica os pré-requisitos antes de iniciar os serviços. N
 
    `DB_URL` é a URL usada pela API e pelas migrações. No ambiente do Compose, o host do banco é `db`. Use uma senha local segura e mantenha o arquivo `.env` fora do controle de versão.
    Configure também `JWT_SECRET` com pelo menos 32 caracteres aleatórios, por exemplo com `openssl rand -base64 32`.
+   Defina `SEED_USER_PASSWORD` com uma senha de ao menos 8 caracteres para os usuários criados pelo seed de demonstração.
    Troque o valor de exemplo de `GRAFANA_ADMIN_PASSWORD` por uma senha local forte e, se desejar, ajuste `GRAFANA_ADMIN_USER`.
    O `.env.example` define `NODE_ENV=development` para uso local; em outros ambientes, use `NODE_ENV=production` para ativar o atributo `Secure` nos cookies.
 
@@ -298,6 +300,12 @@ Erros de validação e de operação usam `application/problem+json` (RFC 9457),
 
 Os tokens de autenticação são enviados somente em cookies `httpOnly` com `SameSite=Strict`; em produção, também usam `Secure`. O access token expira em 15 minutos e o refresh token em 7 dias. O logout revoga o refresh token; um access token já emitido pode continuar válido por até 15 minutos.
 
+## Seeds de demonstração
+
+Os dados de demonstração são criados somente mediante comando explícito — nunca na subida normal. Use `./start.sh --seed` ou o atalho equivalente `npm run seed`. O comando inicia a aplicação, executa o seed Prisma dentro do container da API e pode ser repetido sem duplicar registros.
+
+São criados os tenants **Empresa Alfa** e **Empresa Beta**, cada um com usuários `admin`, `operador` e `leitor`. Todos usam a senha definida em `SEED_USER_PASSWORD`; os e-mails são exibidos ao término do comando. Cada tenant recebe 55 clientes determinísticos, incluindo pessoas físicas e jurídicas, CNPJ numérico e alfanumérico, endereços com e sem complemento, números `S/N` e cinco clientes na lixeira. Um CPF é compartilhado pelos dois tenants para demonstrar a unicidade por tenant.
+
 ## Testes
 
 Execute os testes dos pacotes a partir da raiz:
@@ -310,6 +318,8 @@ Os testes end-to-end da interface usam Playwright e a versão compilada da aplic
 
 ```bash
 npm run test:e2e
+# ou
+./start.sh --qa
 ```
 
 O relatório HTML fica em `apps/e2e/playwright-report`. Em falhas, o Playwright guarda trace, screenshot e vídeo em `apps/e2e/test-results`. Os testes são executados em Chromium nos perfis desktop `1280 × 800` e celular `360 × 640` e `390 × 844`; também verificam acessibilidade com axe e falham diante de erros/avisos no console ou respostas 5xx. Para ajustar portas locais, defina `QA_WEB_PORT`, `QA_API_PORT` e `QA_DB_PORT`.
@@ -340,6 +350,9 @@ TEST_DATABASE_URL=postgresql://usuario:senha@localhost:5432/banco_teste npm run 
 ./start.sh --logs   # Acompanha os logs dos serviços
 ./start.sh --stop   # Para os serviços, preservando os dados
 ./start.sh --reset  # Apaga os dados do banco e inicia tudo novamente, preservando logs
+./start.sh --seed   # Cria ou atualiza os dados de demonstração
+./start.sh --reset --seed  # Redefine o banco e recria os dados de demonstração
+./start.sh --qa     # Executa QA E2E em ambiente isolado
 ```
 
 > **Atenção:** `./start.sh --reset` apaga permanentemente os dados persistidos no banco, mas preserva os logs coletados. O script solicita que você digite `RESET` antes de continuar.
