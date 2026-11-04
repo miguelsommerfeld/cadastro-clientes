@@ -91,7 +91,7 @@ describe("repository and controller forwarding", () => {
         await repository.getAllDeletedCustomers(tenant);
 
         expect(model.registerCustomer).toHaveBeenCalledWith(tenant, "user", registration, address);
-        expect(model.updateCustomer).toHaveBeenCalledWith(tenant, "user", "customer", { name: "Updated" });
+        expect(model.updateCustomer).toHaveBeenCalledWith(tenant, "customer", "user", { name: "Updated" });
         for (const method of methods.slice(2)) expect(model[method]).toHaveBeenCalled();
     });
 

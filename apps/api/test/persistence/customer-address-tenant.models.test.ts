@@ -19,7 +19,7 @@ const userId = "11111111-1111-4111-8111-111111111111";
 const addressInput = {
     zipCode: "01001000",
     street: "Praça da Sé",
-    number: null,
+    number: "1",
     complement: null,
     district: "Sé",
     city: "São Paulo",
@@ -63,30 +63,44 @@ describe("AddressModel persistence behavior", () => {
 
     beforeEach(() => resetTables());
 
-    it("stores an address with its default house number and maps lookup results", async () => {
+    it("stores an address and maps lookup results", async () => {
         const address = await model.registerAddress("customer-1", addressInput);
 
         expect(address).toMatchObject({
             customerId: "customer-1",
             zipCode: "01001000",
-            number: "S/N",
+            number: "1",
             complement: null,
             state: "SP"
         });
         await expect(model.getAddress("customer-1")).resolves.toBe(address);
     });
 
-    it("skips empty address batches, filters requested ids, and handles absent or nullable number updates", async () => {
+    it("skips empty address batches, filters requested ids, and updates only supplied address fields", async () => {
         await expect(model.getAllAddresses([])).resolves.toEqual([]);
         const first = await model.registerAddress("customer-1", addressInput);
         await model.registerAddress("customer-2", { ...addressInput, number: "22" });
 
         await expect(model.getAllAddresses(["customer-1"])).resolves.toEqual([first]);
         expect(await model.updateAddress("customer-1", {} as never)).toBeNull();
-        await model.updateAddress("customer-1", { number: null });
-        await expect(model.getAddress("customer-1")).resolves.toMatchObject({ number: "S/N" });
-        await model.updateAddress("customer-1", { number: "5B" });
-        await expect(model.getAddress("customer-1")).resolves.toMatchObject({ number: "5B" });
+        await model.updateAddress("customer-1", {
+            zipCode: "01310100",
+            street: "Avenida Paulista",
+            number: "5B",
+            complement: "Sala 12",
+            district: "Bela Vista",
+            city: "São Paulo",
+            state: "SP"
+        });
+        await expect(model.getAddress("customer-1")).resolves.toMatchObject({
+            zipCode: "01310100",
+            street: "Avenida Paulista",
+            number: "5B",
+            complement: "Sala 12",
+            district: "Bela Vista",
+            city: "São Paulo",
+            state: "SP"
+        });
         await model.deleteAddress("customer-1");
         await expect(model.getAddress("customer-1")).resolves.toBeNull();
     });
@@ -139,7 +153,7 @@ describe("CustomerModel persistence behavior", () => {
         });
     });
 
-    it("updates only supplied fields and delegates address-number updates", async () => {
+    it("updates supplied customer and address fields", async () => {
         const customer = seedCustomer();
         await addressModel.registerAddress(customer.id, { ...addressInput, number: "1" });
 
@@ -149,7 +163,15 @@ describe("CustomerModel persistence behavior", () => {
             birthDate: null,
             email: "updated@example.com",
             phone: "11988887777",
-            address: { number: null }
+            address: {
+                zipCode: "01310100",
+                street: "Avenida Paulista",
+                number: "1000",
+                complement: null,
+                district: "Bela Vista",
+                city: "São Paulo",
+                state: "SP"
+            }
         });
 
         expect(customer).toMatchObject({
@@ -160,7 +182,15 @@ describe("CustomerModel persistence behavior", () => {
             phone: "11988887777",
             updatedBy: userId
         });
-        await expect(addressModel.getAddress(customer.id)).resolves.toMatchObject({ number: "S/N" });
+        await expect(addressModel.getAddress(customer.id)).resolves.toMatchObject({
+            zipCode: "01310100",
+            street: "Avenida Paulista",
+            number: "1000",
+            complement: null,
+            district: "Bela Vista",
+            city: "São Paulo",
+            state: "SP"
+        });
 
         const timestamp = customer.updatedAt;
         await model.updateCustomer(tenantId, customer.id, userId, {
