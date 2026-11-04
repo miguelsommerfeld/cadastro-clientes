@@ -42,7 +42,7 @@ describe("repository and controller forwarding", () => {
     });
 
     it("forwards every UserRepository operation, retaining tenant and user identifiers", () => {
-        const methods = ["getAllUsers", "findUser", "findUserByEmail", "registerUser", "updateUser", "deleteUser"];
+        const methods = ["getAllUsers", "findUser", "findUserByEmail", "registerUser", "updateUser"];
         const model = spyObject(methods);
         const repository = new UserRepository(model as never);
 
@@ -56,14 +56,12 @@ describe("repository and controller forwarding", () => {
             role: "VIEWER"
         });
         repository.updateUser("tenant" as never, "user", { role: "OPERATOR" });
-        repository.deleteUser("tenant" as never, "user");
 
         expect(model.getAllUsers).toHaveBeenCalledWith("tenant");
         expect(model.findUser).toHaveBeenCalledWith("tenant", "user");
         expect(model.findUserByEmail).toHaveBeenCalledWith("email");
         expect(model.registerUser).toHaveBeenCalledWith("tenant", expect.objectContaining({ role: "VIEWER" }));
         expect(model.updateUser).toHaveBeenCalledWith("tenant", "user", { role: "OPERATOR" });
-        expect(model.deleteUser).toHaveBeenCalledWith("tenant", "user");
     });
 
     it("forwards customer repository operations for registration, lifecycle, lookup, and validation", async () => {
@@ -98,7 +96,7 @@ describe("repository and controller forwarding", () => {
     });
 
     it("forwards all UserController actions without altering claims or managed-user data", () => {
-        const methods = ["getAllUsers", "registerUser", "updateUser", "deleteUser"];
+        const methods = ["getAllUsers", "registerUser", "updateUser"];
         const service = spyObject(methods);
         const controller = new UserController(service as never);
         const claims = { sub: "subject" } as never;
@@ -107,12 +105,10 @@ describe("repository and controller forwarding", () => {
         controller.getAllUsers(claims);
         controller.registerUser(claims, payload);
         controller.updateUser(claims, "user", payload);
-        controller.deleteUser(claims, "user");
 
         expect(service.getAllUsers).toHaveBeenCalledWith(claims);
         expect(service.registerUser).toHaveBeenCalledWith(claims, payload);
         expect(service.updateUser).toHaveBeenCalledWith(claims, "user", payload);
-        expect(service.deleteUser).toHaveBeenCalledWith(claims, "user");
     });
 
     it("forwards all AuthController session and token actions", () => {

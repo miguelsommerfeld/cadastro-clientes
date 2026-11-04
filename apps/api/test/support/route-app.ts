@@ -51,7 +51,7 @@ type AuthControllerDoubles = Record<
     MockFunction
 >;
 type UserControllerDoubles = Record<
-    "getAllUsers" | "registerUser" | "updateUser" | "deleteUser",
+    "getAllUsers" | "registerUser" | "updateUser",
     MockFunction
 >;
 type ControllerDoubles = {
@@ -86,8 +86,7 @@ function controllerDoubles(): ControllerDoubles {
         userController: {
             getAllUsers: vi.fn(),
             registerUser: vi.fn(),
-            updateUser: vi.fn(),
-            deleteUser: vi.fn()
+            updateUser: vi.fn()
         }
     };
 }

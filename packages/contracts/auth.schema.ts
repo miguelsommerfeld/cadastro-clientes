@@ -8,8 +8,7 @@ export const permissions = [
     "customer:write",
     "customer:trash",
     "customer:delete-permanent",
-    "user:manage",
-    "user:delete-permanent"
+    "user:manage"
 ] as const;
 
 export const rolePermissions = {

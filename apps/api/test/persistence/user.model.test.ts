@@ -123,33 +123,4 @@ describe("UserModel persistence behavior", () => {
             .resolves.toMatchObject({ role: "OPERATOR" });
     });
 
-    it("blocks deletion of the sole active ADMIN, but deletes other accounts and their sessions", async () => {
-        seedUser();
-        tables.Sessions.push({ id: "session-1", userId: adminId });
-
-        const blocked = await model.deleteUser(tenantId as never, adminId);
-        expect(blocked).toBeInstanceOf(ApplicationError);
-        expect(tables.Users).toHaveLength(1);
-        expect(tables.Sessions).toHaveLength(1);
-
-        const deleted = await model.deleteUser(tenantId as never, "missing");
-        expect(deleted).toBe(false);
-
-        seedUser({
-            id: "44444444-4444-4444-8444-444444444444",
-            role: "OPERATOR"
-        });
-        tables.Sessions.push({ id: "session-2", userId: "44444444-4444-4444-8444-444444444444" });
-        await expect(model.deleteUser(tenantId as never, "44444444-4444-4444-8444-444444444444"))
-            .resolves.toBe(true);
-        expect(tables.Sessions.map(({ id }) => id)).toEqual(["session-1"]);
-        expect(tables.Users.map(({ role }) => role)).toEqual(["ADMIN"]);
-    });
-
-    it("allows deletion of one ADMIN when another active ADMIN remains", async () => {
-        seedUser();
-        seedUser({ id: "44444444-4444-4444-8444-444444444444" });
-        await expect(model.deleteUser(tenantId as never, adminId)).resolves.toBe(true);
-        expect(tables.Users.map(({ id }) => id)).toEqual(["44444444-4444-4444-8444-444444444444"]);
-    });
 });

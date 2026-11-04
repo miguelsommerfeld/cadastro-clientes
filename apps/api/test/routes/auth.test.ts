@@ -12,8 +12,7 @@ const sessionUser = {
         "customer:write",
         "customer:trash",
         "customer:delete-permanent",
-        "user:manage",
-        "user:delete-permanent"
+        "user:manage"
     ],
     tenant: {
         id: "22222222-2222-4222-8222-222222222222",
