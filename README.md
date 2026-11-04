@@ -30,6 +30,8 @@ Aplicação para cadastro e gerenciamento de clientes pessoa física e pessoa ju
 - Exclusão permanente de clientes ativos ou removidos.
 - Verificação de saúde da API e documentação interativa via Swagger.
 - Cadastro de conta e tenant, login e manutenção de sessão com JWT e cookies seguros.
+- Gestão de usuários do tenant, papéis e permissões aplicados às telas e ações da interface.
+- Renovação transparente da sessão, redirecionamento para login e retorno à rota protegida.
 - Logs centralizados de banco, API e interface no Grafana, coletados pelo Alloy e armazenados no Loki.
 
 As telas ficam disponíveis em:
@@ -38,6 +40,9 @@ As telas ficam disponíveis em:
 - `/clientes/novo` — cadastro em quatro etapas.
 - `/clientes/:id/editar` — edição.
 - `/lixeira` — clientes removidos.
+- `/entrar` — login.
+- `/criar-conta` — cadastro da empresa e do primeiro administrador.
+- `/usuarios` — gestão dos usuários do tenant (permissão `user:manage`).
 
 Caminhos desconhecidos exibem uma página 404.
 
@@ -68,6 +73,7 @@ Caminhos desconhecidos exibem uma página 404.
 │   │       ├── routes/         # Rotas Fastify
 │   │       └── services/       # Regras de negócio
 │   └── web/                    # Interface React servida pelo Nginx
+├── e2e/                        # QA da interface com Playwright
 ├── packages/
 │   └── contracts/              # Schemas Zod compartilhados
 ├── observability/
@@ -82,7 +88,7 @@ Caminhos desconhecidos exibem uma página 404.
 ## Pré-requisitos
 
 - Docker Engine ou Docker Desktop em execução.
-- Docker Compose v2 ou superior.
+- Docker Compose v2.24 ou superior.
 
 O script `start.sh` verifica os pré-requisitos antes de iniciar os serviços. Não é necessário instalar Node.js ou PostgreSQL na máquina para usar a configuração via Docker Compose.
 
@@ -144,8 +150,13 @@ A interface foi desenvolvida em React e TypeScript e se adapta a telas grandes e
 | Novo cliente | `/clientes/novo` | Cadastrar pessoa física ou jurídica em quatro etapas: identificação, contato, endereço e revisão dos dados. O preenchimento do endereço pode buscar os dados pelo CEP. |
 | Editar cliente | `/clientes/:id/editar` | Atualizar os dados permitidos de um cadastro existente. O tipo de pessoa e o documento são preservados. |
 | Lixeira | `/lixeira` | Consultar clientes removidos, restaurá-los ou excluí-los definitivamente. As ações de remoção pedem confirmação. |
+| Login | `/entrar` | Entrar com e-mail e senha; uma rota protegida aberta sem sessão retorna ao login e pode ser retomada depois. |
+| Criar conta | `/criar-conta` | Criar o tenant da empresa e a conta inicial de administrador. |
+| Usuários | `/usuarios` | Administradores criam usuários do tenant e alteram os papéis de operador e leitor. |
 
 O cadastro valida os campos em cada etapa e apresenta os erros junto aos campos correspondentes. Antes de concluir, a etapa de revisão permite conferir e voltar para corrigir os dados. Os formulários também oferecem navegação por teclado, rótulos associados aos campos e mensagens de estado para tecnologias assistivas.
+
+As telas de clientes exigem a permissão `customer:read`; cadastro e edição exigem `customer:write`. A navegação e os controles de ação acompanham as permissões recebidas da sessão, sem substituir a autorização feita pela API. A interface consulta `GET /api/v1/auth/me` no início e usa cookies HTTP-only para login, renovação e logout.
 
 ### Capturas de tela
 
@@ -294,6 +305,14 @@ Execute os testes dos pacotes a partir da raiz:
 ```bash
 npm test
 ```
+
+Os testes end-to-end da interface usam Playwright e a versão compilada da aplicação. O comando cria uma stack Docker com banco e volume próprios para QA, prepara dados novos em cada teste e remove a stack e o volume ao terminar:
+
+```bash
+npm run test:e2e
+```
+
+O relatório HTML fica em `apps/e2e/playwright-report`. Em falhas, o Playwright guarda trace, screenshot e vídeo em `apps/e2e/test-results`. Os testes são executados em Chromium nos perfis desktop `1280 × 800` e celular `360 × 640` e `390 × 844`; também verificam acessibilidade com axe e falham diante de erros/avisos no console ou respostas 5xx. Para ajustar portas locais, defina `QA_WEB_PORT`, `QA_API_PORT` e `QA_DB_PORT`.
 
 Os testes da API usam Vitest e `Fastify.inject()`, com dublês nos limites dos serviços; a suíte unitária não precisa de banco nem de rede. A cobertura de linhas e branches de `apps/api/src` deve permanecer em pelo menos 80%, e o comando falha se ficar abaixo desse limite.
 

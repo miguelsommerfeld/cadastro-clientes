@@ -13,6 +13,8 @@ dist-ssr
 coverage
 *.local
 .env
+apps/e2e/playwright-report
+apps/e2e/test-results
 
 # Editor directories and files
 .vscode

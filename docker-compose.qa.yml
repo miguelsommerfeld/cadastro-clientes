@@ -1,0 +1,19 @@
+services:
+  db:
+    ports: !override
+      - "127.0.0.1:${QA_DB_PORT:-15432}:5432"
+    volumes: !override
+      - qa_postgres_data:/var/lib/postgresql
+
+  api:
+    environment:
+      DB_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/${DB_NAME:-cadastro_clientes}
+    ports: !override
+      - "127.0.0.1:${QA_API_PORT:-13333}:3333"
+
+  web:
+    ports: !override
+      - "127.0.0.1:${QA_WEB_PORT:-18080}:8080"
+
+volumes:
+  qa_postgres_data:
