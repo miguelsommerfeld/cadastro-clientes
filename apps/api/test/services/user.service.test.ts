@@ -49,13 +49,6 @@ function makeFixture(admins = 1) {
             if (typeof data.username === "string") target.name = data.username;
             if (typeof data.email === "string") target.email = data.email;
             return target;
-        }),
-        deleteUser: vi.fn(async (_tenant: unknown, id: string) => {
-            if (id !== adminId) return false;
-            if (user.role === "ADMIN" && user.isActive && activeAdmins.length <= 1) {
-                return new ApplicationError(409, "last-admin");
-            }
-            return true;
         })
     };
     return {
@@ -94,16 +87,6 @@ describe("UserService with an in-memory repository", () => {
         expect(repository.updateUser).not.toHaveBeenCalled();
     });
 
-    it("prevents an ADMIN from deleting their own account", async () => {
-        const { service, repository } = makeFixture(2);
-
-        await expect(service.deleteUser(claims, adminId)).resolves.toEqual({
-            code: 403,
-            message: "Não é permitido excluir a própria conta."
-        });
-        expect(repository.deleteUser).not.toHaveBeenCalled();
-    });
-
     it("preserves the last-ADMIN conflict when a tenant's sole administrator is demoted", async () => {
         const { service, repository } = makeFixture(1);
 
@@ -112,35 +95,6 @@ describe("UserService with an in-memory repository", () => {
             message: "last-admin"
         });
         expect(repository.updateUser).toHaveBeenCalledWith(tenantId, adminId, { role: "OPERATOR" });
-    });
-
-    it("reports an unknown user when deletion targets no account", async () => {
-        const { service, repository } = makeFixture(1);
-
-        await expect(service.deleteUser(claims, "another-admin")).resolves.toEqual({
-            code: 404,
-            message: "Usuário não encontrado."
-        });
-        await expect(service.deleteUser(claims, "someone-else")).resolves.toEqual({
-            code: 404,
-            message: "Usuário não encontrado."
-        });
-        expect(repository.deleteUser).toHaveBeenNthCalledWith(1, tenantId, "another-admin");
-        expect(repository.deleteUser).toHaveBeenNthCalledWith(2, tenantId, "someone-else");
-    });
-
-    it("returns an explicit last-ADMIN conflict from the repository when deleting another sole administrator", async () => {
-        const { service, repository, user } = makeFixture(1);
-        const otherAdminId = "44444444-4444-4444-8444-444444444444";
-        repository.findUser.mockImplementation(async (_tenant, id) =>
-            id === adminId ? user : makeUser({ id: otherAdminId }));
-        repository.deleteUser.mockResolvedValueOnce(new ApplicationError(409, "last-admin"));
-
-        await expect(service.deleteUser(claims, otherAdminId)).resolves.toEqual({
-            code: 409,
-            message: "last-admin"
-        });
-        expect(repository.deleteUser).toHaveBeenCalledWith(tenantId, otherAdminId);
     });
 
     it("rejects cross-tenant user edits as not found", async () => {

@@ -92,28 +92,6 @@ export class UserService extends Service {
         return this.toUserSchema(user);
     }
 
-    public async deleteUser(
-        claims: AccessTokenClaims,
-        userId: string
-    ): Promise<void | ApplicationErrorResponse> {
-        const authorization = await this.ensureAdmin(claims);
-        if (authorization) return authorization;
-
-        if (claims.sub === userId) {
-            return this.toApplicationErrorResponse(
-                new ApplicationError(403, "Não é permitido excluir a própria conta.")
-            );
-        }
-
-        const result = await this.repository.deleteUser(claims.tid, userId);
-        if (result instanceof ApplicationError) {
-            return this.toApplicationErrorResponse(result);
-        }
-        if (!result) {
-            return this.toNotFoundError();
-        }
-    }
-
     private async ensureAdmin(
         claims: AccessTokenClaims
     ): Promise<ApplicationErrorResponse | undefined> {

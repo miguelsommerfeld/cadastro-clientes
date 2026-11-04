@@ -100,33 +100,4 @@ export class UserModel extends Model {
         });
     }
 
-    public async deleteUser(
-        tenantId: TenantId,
-        userId: string
-    ): Promise<boolean | ApplicationError> {
-        return this.db.transaction(async (tx) => {
-            const user = await tx.orm.public.Users
-                .where({ id: userId, tenantId })
-                .first();
-            if (!user) return false;
-
-            if (user.role === "ADMIN" && user.isActive) {
-                const admins = await tx.orm.public.Users
-                    .where({ tenantId, role: "ADMIN", isActive: true })
-                    .all();
-                if (admins.length <= 1) {
-                    return new ApplicationError(409, "last-admin");
-                }
-            }
-
-            await tx.orm.public.Sessions
-                .where({ userId })
-                .deleteAll();
-            await tx.orm.public.Users
-                .where({ id: userId, tenantId })
-                .delete();
-
-            return true;
-        });
-    }
 }

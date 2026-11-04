@@ -41,7 +41,4 @@ export class UserRepository {
         return this.model.updateUser(tenantId, userId, userData);
     }
 
-    public deleteUser(tenantId: TenantId, userId: string) {
-        return this.model.deleteUser(tenantId, userId);
-    }
 }

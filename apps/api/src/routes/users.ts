@@ -109,29 +109,6 @@ const usersRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedI
         }
     });
 
-    server.delete('/users', {
-        config: { permission: "user:delete-permanent" },
-        schema: {
-            security: [{ accessToken: [] }],
-            querystring: z.object({ id: z.uuid() }).strict(),
-            response: {
-                204: z.void(),
-                400: problemDetailsSchema,
-                404: problemDetailsSchema,
-                409: problemDetailsSchema,
-                ...protectedResponseSchemas,
-                503: problemDetailsSchema
-            }
-        },
-        handler: async function (req, res) {
-            const result = await this.userController.deleteUser(req.user, req.query.id);
-            if (result && "code" in result) {
-                return sendProblem(res, req, result.code, result.message);
-            }
-
-            return res.status(204).send();
-        }
-    });
 };
 
 export default usersRoutes;

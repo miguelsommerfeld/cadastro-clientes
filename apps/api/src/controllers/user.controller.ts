@@ -24,7 +24,4 @@ export class UserController {
         return this.service.updateUser(claims, userId, userData);
     }
 
-    public deleteUser(claims: AccessTokenClaims, userId: string) {
-        return this.service.deleteUser(claims, userId);
-    }
 }
