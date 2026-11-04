@@ -66,12 +66,9 @@ export class CustomerModel extends Model {
     ): Promise<void> {
         const updates: Partial<Pick<
             Models.public_Customers,
-            "document" | "name" | "tradeName" | "birthDate" | "email" | "phone" | "updatedBy"
+            "name" | "tradeName" | "birthDate" | "email" | "phone" | "updatedBy"
         >> = {};
 
-        if (customerData.document !== undefined) {
-            updates.document = this.toVarchar(customerData.document, 14);
-        }
         if (customerData.name !== undefined) {
             updates.name = this.toVarchar(customerData.name, 150);
         }
@@ -137,7 +134,6 @@ export class CustomerModel extends Model {
         try {
             const customer = await this.db.orm.public.Customers
                 .where({ id: customerId, tenantId })
-                .where((record) => record.deletedAt.isNotNull())
                 .first();
             if (!customer) return false;
 
@@ -215,6 +211,7 @@ export class CustomerModel extends Model {
     public async getAllCustomers(tenantId: TenantId): Promise<CustomerWithAddress[] | ApplicationError> {
         const customers = await this.db.orm.public.Customers
             .where({ tenantId, deletedAt: null })
+            .orderBy((customer) => customer.createdAt.desc())
             .all();
         const addresses = await this.addressModel.getAllAddresses(customers.map(({ id }) => id));
         const addressesByCustomerId = new Map(addresses.map((address) => [address.customerId, address]));
@@ -244,6 +241,7 @@ export class CustomerModel extends Model {
             const customers = await this.db.orm.public.Customers
                 .where({ tenantId })
                 .where((customer) => customer.deletedAt.isNotNull())
+                .orderBy((customer) => customer.deletedAt.desc())
                 .all();
             const addresses = await this.addressModel.getAllAddresses(customers.map(({ id }) => id));
             const addressesByCustomerId = new Map(addresses.map((address) => [address.customerId, address]));

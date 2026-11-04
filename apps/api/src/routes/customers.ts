@@ -5,25 +5,20 @@ import {
     customersResponseSchema,
     customerUpdateSchema
 } from '@packages/contracts/customer.schema';
-import { documentValidation } from '@packages/contracts/document.schema'
+import { problemDetailsSchema } from "@packages/contracts/problem-details.schema";
 import { stateValidator } from '@/helpers/state.validator';
 import z from 'zod';
+import {
+    getHttpErrorMessage,
+    getHttpErrorStatus,
+    sendProblem,
+    validationProblemErrors
+} from "@/helpers/problem-details";
 import { authenticate } from '@/middlewares/auth.middleware';
 
-const applicationErrorResponseSchema = z.object({
-    code: z.number(),
-    message: z.string()
-});
-const problemDetailsSchema = z.object({
-    type: z.string(),
-    title: z.string(),
-    status: z.number(),
-    detail: z.string(),
-    requestId: z.string().optional()
-});
 const protectedResponseSchemas = {
     401: problemDetailsSchema,
-    403: z.union([applicationErrorResponseSchema, problemDetailsSchema]),
+    403: problemDetailsSchema,
     500: problemDetailsSchema
 };
 
@@ -31,28 +26,20 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server: FastifyTy
     server.addHook("onRequest", authenticate);
 
     server.setErrorHandler((error, request, reply) => {
-        const statusCode =
-            error instanceof Error &&
-            "statusCode" in error &&
-            typeof error.statusCode === "number"
-                ? error.statusCode
-                : 500;
+        const statusCode = getHttpErrorStatus(error) ?? 500;
 
-        if (statusCode < 500) {
-            return reply.status(statusCode).send({
-                message: error instanceof Error ? error.message : "Requisição inválida.",
-                error: statusCode === 400 ? "Bad Request" : "Request Error"
-            });
+        if (statusCode >= 500) {
+            request.log.error({ err: error }, "Unhandled request error");
+            return sendProblem(
+                reply,
+                request,
+                statusCode === 503 ? 503 : 500,
+                "Não foi possível concluir a solicitação."
+            );
         }
 
-        request.log.error({ err: error }, "Unhandled request error");
-        return reply.status(500).send({
-            type: "/problems/internal-server-error",
-            title: "Internal Server Error",
-            status: 500,
-            detail: "Não foi possível concluir a solicitação.",
-            requestId: request.id
-        });
+        const detail = getHttpErrorMessage(error) ?? "Requisição inválida.";
+        return sendProblem(reply, request, statusCode, detail, validationProblemErrors(error));
     });
 
     // Get all customers or get a customer by its id
@@ -69,8 +56,9 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server: FastifyTy
                     customersResponseSchema.array()
                 ]),
                 ...protectedResponseSchemas,
-                404: applicationErrorResponseSchema,
-                503: applicationErrorResponseSchema
+                400: problemDetailsSchema,
+                404: problemDetailsSchema,
+                503: problemDetailsSchema
             }
         },
         handler: async function (req, res) {
@@ -80,7 +68,7 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server: FastifyTy
                 const customer = await this.customerController.getCustomer(req.user, id);
 
                 if ("code" in customer) {
-                    return res.status(customer.code).send(customer);
+                    return sendProblem(res, req, customer.code, customer.message);
                 }
 
                 return res.status(200).send(customer);
@@ -89,7 +77,7 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server: FastifyTy
             const customers = await this.customerController.getAllCustomers(req.user);
 
             if (!Array.isArray(customers)) {
-                return res.status(customers.code).send(customers);
+                return sendProblem(res, req, customers.code, customers.message);
             }
 
             return res.status(200).send(customers);
@@ -104,15 +92,16 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server: FastifyTy
             response: {
                 200: customersResponseSchema.array(),
                 ...protectedResponseSchemas,
-                404: applicationErrorResponseSchema,
-                503: applicationErrorResponseSchema
+                400: problemDetailsSchema,
+                404: problemDetailsSchema,
+                503: problemDetailsSchema
             }
         },
         handler: async function (req, res) {
             const customers = await this.customerController.getAllDeletedCustomers(req.user);
 
             if (!Array.isArray(customers)) {
-                return res.status(customers.code).send(customers);
+                return sendProblem(res, req, customers.code, customers.message);
             }
 
             return res.status(200).send(customers);
@@ -127,14 +116,11 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server: FastifyTy
             body: customersRequestSchema,
             response: {
                 201: customersResponseSchema,
-                400: z.union([documentValidation, z.object({
-                    message: z.string(),
-                    error: z.string()
-                })]),
-                404: applicationErrorResponseSchema,
-                409: documentValidation,
+                400: problemDetailsSchema,
+                404: problemDetailsSchema,
+                409: problemDetailsSchema,
                 ...protectedResponseSchemas,
-                503: applicationErrorResponseSchema
+                503: problemDetailsSchema
             }
         },
         handler: async function (req, res) {
@@ -145,14 +131,11 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server: FastifyTy
             );
 
             if ("code" in isDocumentUnique) {
-                return res.status(isDocumentUnique.code).send(isDocumentUnique);
+                return sendProblem(res, req, isDocumentUnique.code, isDocumentUnique.message);
             }
 
             if (isDocumentUnique.status === 409 || isDocumentUnique.status === 400) {
-                return res.status(isDocumentUnique.status).send({
-                    status: isDocumentUnique.status,
-                    message: isDocumentUnique.message
-                });
+                return sendProblem(res, req, isDocumentUnique.status, isDocumentUnique.message ?? "");
             }
 
             const isEmailRegistered = await this.customerController.isEmailRegistered(
@@ -161,16 +144,13 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server: FastifyTy
             );
 
             if (isEmailRegistered.status === 409) {
-                return res.status(409).send({
-                    status: 409,
-                    message: isEmailRegistered.message
-                });
+                return sendProblem(res, req, 409, isEmailRegistered.message ?? "");
             }
 
             const stateResponse = await stateValidator(req.body.address.state);
 
             if (stateResponse.status !== 200) {
-                return res.status(stateResponse.status).send(stateResponse);
+                return sendProblem(res, req, stateResponse.status, stateResponse.message ?? "");
             }
 
             try {
@@ -182,16 +162,21 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server: FastifyTy
                 );
 
                 if ("code" in response) {
-                    return res.status(response.code).send(response);
+                    return sendProblem(res, req, response.code, response.message);
                 }
 
-                return res.status(201).send(response);
+                return res
+                    .header("Location", `/api/v1/customers?id=${encodeURIComponent(response.id)}`)
+                    .status(201)
+                    .send(response);
             } catch (err) {
-                if (err instanceof Error) {
-                    return res.status(400).send({ message: "Dados inválidos", error: err.message })
-                }
-
-                return res.status(400).send({ message: "Dados inválidos", error: "Desconhecido." })
+                req.log.error({ err }, "Customer registration failed");
+                return sendProblem(
+                    res,
+                    req,
+                    503,
+                    "Não foi possível concluir a solicitação."
+                );
             }
         }
     });
@@ -207,42 +192,30 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server: FastifyTy
             response: {
                 200: z.void(),
                 ...protectedResponseSchemas,
-                404: z.union([z.object({
-                    status: z.literal(404),
-                    message: z.string()
-                }), applicationErrorResponseSchema]),
-                409: z.object({
-                    status: z.literal(404),
-                    message: z.string()
-                }),
-                503: applicationErrorResponseSchema
+                404: problemDetailsSchema,
+                409: problemDetailsSchema,
+                503: problemDetailsSchema
             }
         },
         handler: async function (req, res) {
             if (req.query.id === undefined) {
-                return res.status(404).send({
-                    status: 404,
-                    message: "Insira o ID do usuário que deseja restaurar"
-                });
+                return sendProblem(res, req, 404, "Insira o ID do usuário que deseja restaurar.");
             }
 
             const id = req.query.id;
             const customer = await this.customerController.getDeletedCustomer(req.user, id);
 
             if (customer && "code" in customer) {
-                return res.status(customer.code).send(customer);
+                return sendProblem(res, req, customer.code, customer.message);
             }
 
             if (customer === null) {
-                return res.status(404).send({
-                    status: 404,
-                    message: "Usuário não encontrado na lixeira"
-                });
+                return sendProblem(res, req, 404, "Usuário não encontrado na lixeira.");
             }
 
             const result = await this.customerController.restoreCustomer(req.user, id);
             if (result !== undefined && "code" in result) {
-                return res.status(result.code).send(result);
+                return sendProblem(res, req, result.code, result.message);
             }
 
             return res.status(200).send();
@@ -260,31 +233,23 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server: FastifyTy
             body: customerUpdateSchema,
             response: {
                 200: z.void(),
-                400: z.object({
-                    status: z.literal(400),
-                    message: z.string()
-                }),
-                404: z.union([z.object({
-                    status: z.literal(404),
-                    message: z.string()
-                }), applicationErrorResponseSchema]),
+                400: problemDetailsSchema,
+                404: problemDetailsSchema,
                 ...protectedResponseSchemas,
-                503: applicationErrorResponseSchema
+                409: problemDetailsSchema,
+                503: problemDetailsSchema
             }
         },
         handler: async function (req, res) {
             if (req.query.id === undefined) {
-                return res.status(400).send({
-                    status: 400,
-                    message: "Insira o ID do usuário que deseja atualizar"
-                });
+                return sendProblem(res, req, 400, "Insira o ID do usuário que deseja atualizar.");
             }
             
             const id = req.query.id;
             const customer = await this.customerController.getCustomer(req.user, id);
 
             if ("code" in customer) {
-                return res.status(customer.code).send(customer);
+                return sendProblem(res, req, customer.code, customer.message);
             }
 
             const userEmail = req.body.email;
@@ -295,10 +260,7 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server: FastifyTy
                 );
 
                 if (isEmailAlreadyRegistered.status !== 200 && isEmailAlreadyRegistered.message !== null) {
-                    return res.status(400).send({
-                        status: 400,
-                        message: isEmailAlreadyRegistered.message
-                    });
+                    return sendProblem(res, req, isEmailAlreadyRegistered.status, isEmailAlreadyRegistered.message);
                 }
             }
 
@@ -317,32 +279,26 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server: FastifyTy
             }).strict(),
             response: {
                 204: z.void(),
-                404: z.union([z.object({
-                    status: z.literal(404),
-                    message: z.string()
-                }), applicationErrorResponseSchema]),
+                404: problemDetailsSchema,
                 ...protectedResponseSchemas,
-                503: applicationErrorResponseSchema
+                503: problemDetailsSchema
             }
         },
         handler: async function (req, res) {
             if (req.query.id === undefined) {
-                return res.status(404).send({
-                    status: 404,
-                    message: "Insira o ID do usuário que deseja deletar"
-                });
+                return sendProblem(res, req, 404, "Insira o ID do usuário que deseja deletar.");
             }
 
             const id = req.query.id;
             const customer = await this.customerController.getCustomer(req.user, id);
 
             if ("code" in customer) {
-                return res.status(customer.code).send(customer);
+                return sendProblem(res, req, customer.code, customer.message);
             }
 
             const result = await this.customerController.deleteCustomer(req.user, id);
             if (result !== undefined && "code" in result) {
-                return res.status(result.code).send(result);
+                return sendProblem(res, req, result.code, result.message);
             }
 
             return res.status(204).send();
@@ -359,39 +315,34 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server: FastifyTy
             }).strict(),
             response: {
                 204: z.void(),
-                404: z.union([z.object({
-                    status: z.literal(404),
-                    message: z.string()
-                }), applicationErrorResponseSchema]),
+                404: problemDetailsSchema,
                 ...protectedResponseSchemas,
-                503: applicationErrorResponseSchema
+                503: problemDetailsSchema
             }
         },
         handler: async function (req, res) {
             if (req.query.id === undefined) {
-                return res.status(404).send({
-                    status: 404,
-                    message: "Insira o ID do usuário que deseja deletar"
-                });
+                return sendProblem(res, req, 404, "Insira o ID do usuário que deseja deletar.");
             }
 
             const id = req.query.id;
-            const customer = await this.customerController.getDeletedCustomer(req.user, id);
-
-            if (customer !== null && "code" in customer) {
-                return res.status(customer.code).send(customer);
+            const deletedCustomer = await this.customerController.getDeletedCustomer(req.user, id);
+            if (deletedCustomer && "code" in deletedCustomer) {
+                return sendProblem(res, req, deletedCustomer.code, deletedCustomer.message);
             }
-
-            if (customer === null) {
-                return res.status(404).send({
-                    status: 404,
-                    message: "Usuário não encontrado"
-                });
+            if (deletedCustomer === null) {
+                const activeCustomer = await this.customerController.getCustomer(req.user, id);
+                if (activeCustomer && "code" in activeCustomer) {
+                    return sendProblem(res, req, activeCustomer.code, activeCustomer.message);
+                }
+                if (!activeCustomer) {
+                    return sendProblem(res, req, 404, "Usuário não encontrado.");
+                }
             }
 
             const result = await this.customerController.permanentDeleteCustomer(req.user, id);
             if (typeof result !== "boolean" && result !== undefined) {
-                return res.status(result.code).send(result);
+                return sendProblem(res, req, result.code, result.message);
             }
 
             return res.status(204).send();

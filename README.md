@@ -14,6 +14,7 @@ Aplicação para cadastro e gerenciamento de clientes pessoa física e pessoa ju
 - [URLs locais](#urls-locais)
 - [Front-end](#front-end)
 - [API](#api)
+- [Testes](#testes)
 - [Modelos e validações](#modelos-e-validações)
 - [Comandos úteis](#comandos-úteis)
 
@@ -26,7 +27,7 @@ Aplicação para cadastro e gerenciamento de clientes pessoa física e pessoa ju
 - Consulta de clientes ativos e consulta individual por ID.
 - Atualização parcial dos dados de um cliente.
 - Remoção lógica, listagem de clientes removidos e restauração.
-- Exclusão permanente de clientes removidos.
+- Exclusão permanente de clientes ativos ou removidos.
 - Verificação de saúde da API e documentação interativa via Swagger.
 - Cadastro de conta e tenant, login e manutenção de sessão com JWT e cookies seguros.
 - Logs centralizados de banco, API e interface no Grafana, coletados pelo Alloy e armazenados no Loki.
@@ -210,14 +211,14 @@ As rotas de clientes exigem o cookie `access_token`; o tenant usado nas consulta
 | `POST` | `/api/v1/auth/login` | E-mail e senha | Valida as credenciais e define cookies httpOnly; limite de 5 tentativas por minuto por IP/e-mail. |
 | `POST` | `/api/v1/auth/refresh` | Cookie `refresh_token` | Faz a rotação do refresh token e emite novo access token. |
 | `POST` | `/api/v1/auth/logout` | Cookies de autenticação | Revoga a sessão e limpa os cookies; a operação é idempotente. |
-| `GET` | `/api/v1/auth/session` | Cookie `access_token` | Retorna o usuário, tenant, role e permissões, ou `null` se não houver sessão válida. |
+| `GET` | `/api/v1/auth/me` | Cookie `access_token` | Retorna o usuário, tenant, role e permissões, ou `null` se não houver sessão válida. |
 | `GET` | `/api/v1/customers` | Query opcional `id` | Lista clientes ativos; com `id`, retorna um cliente. Retorna `404` se o ID não for encontrado entre os ativos. |
 | `GET` | `/api/v1/customers/deleted` | — | Lista clientes na lixeira (removidos logicamente). |
-| `POST` | `/api/v1/customers` | Corpo JSON | Cadastra um cliente e seu endereço. Retorna `201` quando criado. |
+| `POST` | `/api/v1/customers` | Corpo JSON | Cadastra um cliente e seu endereço. Retorna `201` e `Location` para o cadastro criado. |
 | `PATCH` | `/api/v1/customers?id={id}` | Query obrigatória `id`; corpo JSON parcial | Atualiza os campos enviados. |
 | `DELETE` | `/api/v1/customers?id={id}` | Query obrigatória `id` | Move o cliente ativo para a lixeira. Retorna `204` sem corpo. |
 | `POST` | `/api/v1/customers/restore?id={id}` | Query obrigatória `id` | Restaura um cliente da lixeira. Retorna `200` sem corpo. |
-| `DELETE` | `/api/v1/customers/permanent?id={id}` | Query obrigatória `id` | Exclui permanentemente um cliente que esteja na lixeira. Retorna `204` sem corpo. |
+| `DELETE` | `/api/v1/customers/permanent?id={id}` | Query obrigatória `id` | Exclui permanentemente um cliente ativo ou removido. Retorna `204` sem corpo. |
 
 Os parâmetros `id` são enviados na query string, por exemplo:
 
@@ -282,19 +283,36 @@ Content-Type: application/json
 
 As consultas e o cadastro retornam os dados do cliente, incluindo `id`, `personType`, `name`, `document`, `phone`, `address`, `createdAt` e `deletedAt`. Também podem retornar `email`, `updatedAt`, `birthDate` (pessoa física) ou `tradeName` (pessoa jurídica).
 
-Erros de validação e de operação incluem uma mensagem descritiva. Entre os status usados pela API estão `400` (dados ou parâmetros inválidos), `404` (cliente não encontrado), `409` (conflito de cadastro) e `503` (serviço indisponível no health check). Consulte o Swagger para os schemas e respostas documentados de cada rota.
+Erros de validação e de operação usam `application/problem+json` (RFC 9457), com `type`, `title`, `status`, `detail` e `requestId`. Erros de validação também podem incluir o objeto `errors`, agrupado por campo. Consulte o Swagger para os schemas e respostas documentados de cada rota.
 
 Os tokens de autenticação são enviados somente em cookies `httpOnly` com `SameSite=Strict`; em produção, também usam `Secure`. O access token expira em 15 minutos e o refresh token em 7 dias. O logout revoga o refresh token; um access token já emitido pode continuar válido por até 15 minutos.
+
+## Testes
+
+Execute os testes dos pacotes a partir da raiz:
+
+```bash
+npm test
+```
+
+Os testes da API usam Vitest e `Fastify.inject()`, com dublês nos limites dos serviços; a suíte unitária não precisa de banco nem de rede. A cobertura de linhas e branches de `apps/api/src` deve permanecer em pelo menos 80%, e o comando falha se ficar abaixo desse limite.
+
+O teste de isolamento entre tenants com PostgreSQL real é opt-in e não roda no `npm test` padrão. Aponte `TEST_DATABASE_URL` para um banco de teste PostgreSQL com as migrações aplicadas e execute:
+
+```bash
+TEST_DATABASE_URL=postgresql://usuario:senha@localhost:5432/banco_teste npm run test:integration --workspace @cadastro-clientes/api-v1
+```
 
 ## Modelos e validações
 
 - **Pessoa física:** CPF válido, nome com 3 a 150 caracteres, e-mail válido, telefone brasileiro e data de nascimento entre `1900-01-01` e a data atual.
 - **Pessoa jurídica:** CNPJ válido; nome fantasia é opcional.
-- **Documento:** único dentro de cada tenant. O e-mail de cliente mantém unicidade global.
+- **Documento:** único dentro de cada tenant, também quando o cadastro está na lixeira; CPF/CNPJ são normalizados sem pontuação e CNPJ alfanumérico fica em maiúsculas. Documento e tipo de pessoa não podem ser alterados.
+- **E-mail de cliente:** removidos espaços externos e normalizado para minúsculas; permanece com unicidade global.
 - **Telefone:** validado como número brasileiro e armazenado apenas com dígitos.
 - **Endereço:** CEP com 8 dígitos (com ou sem hífen) e UF correspondente a um estado brasileiro.
 - **Remoção lógica:** o cliente permanece armazenado e pode ser consultado na lixeira e restaurado.
-- **Exclusão permanente:** remove também o endereço associado e não pode ser desfeita.
+- **Exclusão permanente:** remove também o endereço associado e não pode ser desfeita; pode ser aplicada a clientes ativos ou na lixeira.
 
 ## Comandos úteis
 

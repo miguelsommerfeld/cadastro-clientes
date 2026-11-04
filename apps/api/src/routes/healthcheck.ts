@@ -1,18 +1,15 @@
-import { z } from 'zod';
 import { FastifyInstance } from 'fastify'
 import { db } from '@db';
+import { healthResponseSchema } from "@packages/contracts/health.schema";
+import { problemDetailsSchema } from "@packages/contracts/problem-details.schema";
+import { sendProblem } from "@/helpers/problem-details";
 
 export default async (fastify: FastifyInstance) => {
     fastify.get('/health', {
         schema: {
             response: {
-                200: z.object({
-                    status: z.number(),
-                }),
-                503: z.object({
-                    status: z.number(),
-                    message: z.string()
-                })
+                200: healthResponseSchema,
+                503: problemDetailsSchema
             },
         },
     }, async (req, res) => {
@@ -24,10 +21,7 @@ export default async (fastify: FastifyInstance) => {
             }
         } catch (err) {
             req.log.error({ err }, "Health check failed");
-            return res.status(503).send({
-                status: 503,
-                message: "Serviço indisponível"
-            })
+            return sendProblem(res, req, 503, "Serviço indisponível.");
         }
     })
 }

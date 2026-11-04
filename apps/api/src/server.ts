@@ -1,4 +1,4 @@
-import Fastify from "fastify";
+import Fastify, { LogController } from "fastify";
 import { jsonSchemaTransform, serializerCompiler, validatorCompiler, ZodTypeProvider } from "@fastify/type-provider-zod";
 import { fastifySwagger } from "@fastify/swagger";
 import { fastifySwaggerUi } from "@fastify/swagger-ui";
@@ -9,6 +9,12 @@ import jwt from "@fastify/jwt";
 import rateLimit from "@fastify/rate-limit";
 import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
+import {
+    getHttpErrorMessage,
+    getHttpErrorStatus,
+    makeProblemDetails,
+    validationProblemErrors
+} from "./helpers/problem-details.ts";
 
 loadEnv({ path: fileURLToPath(new URL("../../../.env", import.meta.url)) });
 
@@ -22,8 +28,8 @@ const [{ default: dependencies }, { default: healthcheck }, { default: customers
         import("./routes/users.ts")
     ]);
 
-const server = Fastify({
-    logger: {
+export const server = Fastify({
+    logger: process.env["NODE_ENV"] === "test" ? false : {
         level: "info",
         formatters: { level: (label) => ({ level: label }) },
         redact: {
@@ -83,8 +89,10 @@ const server = Fastify({
             : randomUUID();
     },
     requestIdHeader: "x-request-id",
-    requestIdLogLabel: "reqId",
-    disableRequestLogging: true
+    logController: new LogController({
+        requestIdLogLabel: "reqId",
+        disableRequestLogging: true
+    })
 }).withTypeProvider<ZodTypeProvider>();
 server.setValidatorCompiler(validatorCompiler);
 server.setSerializerCompiler(serializerCompiler);
@@ -113,21 +121,23 @@ server.addHook("onResponse", async (request, reply) => {
 });
 
 server.setErrorHandler((error, request, reply) => {
-    const statusCode =
-        error instanceof Error &&
-        "statusCode" in error &&
-        typeof error.statusCode === "number" ? error.statusCode : 500;
+    const statusCode = getHttpErrorStatus(error) ?? 500;
 
-    if (statusCode < 500) return reply.status(statusCode).send(error);
-
-    request.log.error({ err: error }, "Unhandled request error");
-    return reply.status(500).send({
-        type: "/problems/internal-server-error",
-        title: "Internal Server Error",
-        status: 500,
-        detail: "Não foi possível concluir a solicitação.",
-        requestId: request.id
-    });
+    if (statusCode >= 500) request.log.error({ err: error }, "Unhandled request error");
+    const responseStatus = statusCode >= 500 && statusCode !== 503 ? 500 : statusCode;
+    const errorMessage = getHttpErrorMessage(error);
+    const detail = responseStatus >= 500
+        ? "Não foi possível concluir a solicitação."
+        : errorMessage ?? "Requisição inválida.";
+    return reply
+        .status(responseStatus)
+        .type("application/problem+json")
+        .send(makeProblemDetails(
+            responseStatus,
+            detail,
+            request.id,
+            validationProblemErrors(error)
+        ));
 });
 
 server.register(fastifySwagger, {
@@ -173,4 +183,6 @@ server.register(customersRoutes, { prefix: "/api/v1/" });
 server.register(usersRoutes, { prefix: "/api/v1/" });
 server.register(authRoutes, { prefix: "/api/v1/" });
 
-await server.listen({ port: 3333, host: "0.0.0.0" });
+if (process.env["NODE_ENV"] !== "test") {
+    await server.listen({ port: 3333, host: "0.0.0.0" });
+}
