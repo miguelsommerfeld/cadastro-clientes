@@ -28,5 +28,5 @@
     "noEmit": false,
     "resolveJsonModule": true
   },
-  "include": ["./src/**/*.ts", "./config/**/*.ts", "./../../packages/*.ts"]
+  "include": ["./src/**/*.ts", "./config/**/*.ts", "./prisma/seed.ts", "./../../packages/*.ts"]
 }

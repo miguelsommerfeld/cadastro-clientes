@@ -15,11 +15,14 @@ usage() {
 Uso: ./start.sh [opção]
 
 Opções:
-  --help    Mostra esta ajuda.
-  --stop    Para os serviços sem apagar os dados.
-  --logs    Acompanha os logs dos serviços.
-  --reset   Apaga os dados do banco e inicia a aplicação novamente
-            (exige confirmação explícita; preserva os logs).
+  --help           Mostra esta ajuda.
+  --stop           Para os serviços sem apagar os dados.
+  --logs           Acompanha os logs dos serviços.
+  --seed           Inicia a aplicação e cria ou atualiza os dados de demonstração.
+  --qa             Executa os testes E2E em ambiente isolado e gera o relatório HTML.
+  --reset          Apaga os dados do banco e inicia a aplicação novamente
+                   (exige confirmação explícita; preserva os logs).
+  --reset --seed   Apaga os dados, inicia a aplicação e recria os dados de demonstração.
 
 Sem opções, cria .env a partir de .env.example se necessário, constrói
 as imagens, inicia os serviços e aguarda a API e o Grafana ficarem
@@ -109,18 +112,6 @@ ensure_env_file() {
 
     cp "$SCRIPT_DIR/.env.example" "$SCRIPT_DIR/.env"
     printf 'Arquivo .env criado a partir de .env.example.\n'
-    printf 'Configure as variáveis em .env e execute ./start.sh novamente.\n' >&2
-    return 1
-  fi
-
-  local compare_status=0
-  cmp -s "$SCRIPT_DIR/.env" "$SCRIPT_DIR/.env.example" || compare_status=$?
-  if (( compare_status == 0 )); then
-    printf 'O arquivo .env ainda está idêntico a .env.example.\n' >&2
-    printf 'Configure as variáveis em .env e execute ./start.sh novamente.\n' >&2
-    return 1
-  elif (( compare_status > 1 )); then
-    fail "Não foi possível comparar .env com .env.example."
   fi
 }
 
@@ -218,30 +209,80 @@ Aplicação pronta!
 EOF
 }
 
-main() {
-  local option="${1:-}"
+run_seed() {
+  printf 'Criando dados de demonstração...\n'
+  compose exec -T api npm run seed
+}
 
-  if (( $# > 1 )); then
-    usage >&2
-    fail "Informe apenas uma opção."
+run_qa() {
+  bash "$SCRIPT_DIR/apps/e2e/run-qa.sh"
+}
+
+main() {
+  local option
+  local reset_requested=false
+  local seed_requested=false
+  local qa_requested=false
+  local stop_requested=false
+  local logs_requested=false
+
+  for option in "$@"; do
+    case "$option" in
+      --help|-h)
+        if (( $# != 1 )); then
+          usage >&2
+          fail "A opção --help não pode ser combinada com outras opções."
+        fi
+        usage
+        return 0
+        ;;
+      --stop)
+        stop_requested=true
+        ;;
+      --logs)
+        logs_requested=true
+        ;;
+      --reset)
+        reset_requested=true
+        ;;
+      --seed)
+        seed_requested=true
+        ;;
+      --qa)
+        qa_requested=true
+        ;;
+      *)
+        usage >&2
+        fail "Opção desconhecida: $option"
+        ;;
+    esac
+  done
+
+  if [[ "$qa_requested" == true ]]; then
+    if (( $# != 1 )); then
+      usage >&2
+      fail "A opção --qa não pode ser combinada com outras opções."
+    fi
+    check_prerequisites
+    run_qa
+    return
   fi
 
-  case "$option" in
-    --help|-h)
-      usage
-      return 0
-      ;;
-    ""|--stop|--logs|--reset)
-      ;;
-    *)
+  if [[ "$stop_requested" == true || "$logs_requested" == true ]]; then
+    if (( $# != 1 )); then
       usage >&2
-      fail "Opção desconhecida: $option"
-      ;;
-  esac
+      fail "As opções --stop e --logs não podem ser combinadas com outras opções."
+    fi
+    check_prerequisites
+    if [[ "$stop_requested" == true ]]; then
+      compose stop
+    else
+      compose logs --follow
+    fi
+    return
+  fi
 
-  if [[ -z "$option" ]]; then
-    ensure_env_file || return 1
-  elif [[ "$option" == "--reset" ]]; then
+  if [[ "$reset_requested" == true ]]; then
     printf 'Atenção: isso apagará permanentemente os dados do banco de dados.\n'
     printf 'Digite RESET para confirmar: '
     local confirmation
@@ -249,29 +290,24 @@ main() {
       printf 'Reset cancelado; nenhum dado foi removido.\n'
       return 1
     fi
-    ensure_env_file || return 1
   fi
+
+  ensure_env_file || return 1
 
   check_prerequisites
 
-  case "$option" in
-    --stop)
-      compose stop
-      ;;
-    --logs)
-      compose logs --follow
-      ;;
-    --reset)
-      compose down
-      if docker volume inspect "$DATABASE_VOLUME" >/dev/null 2>&1; then
-        docker volume rm "$DATABASE_VOLUME" >/dev/null
-      fi
-      start_application
-      ;;
-    *)
-      start_application
-      ;;
-  esac
+  if [[ "$reset_requested" == true ]]; then
+    compose down
+    if docker volume inspect "$DATABASE_VOLUME" >/dev/null 2>&1; then
+      docker volume rm "$DATABASE_VOLUME" >/dev/null
+    fi
+  fi
+
+  start_application
+
+  if [[ "$seed_requested" == true ]]; then
+    run_seed
+  fi
 }
 
 main "$@"

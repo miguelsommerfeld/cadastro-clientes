@@ -29,6 +29,7 @@ services:
         CORS_ORIGIN: ${CORS_ORIGIN}
         JWT_SECRET: ${JWT_SECRET}
         NODE_ENV: ${NODE_ENV:-production}
+        SEED_USER_PASSWORD: ${SEED_USER_PASSWORD:-}
     ports:
         - "127.0.0.1:3333:3333"
     depends_on:

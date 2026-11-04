@@ -8,6 +8,7 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc && tsc-alias --resolve-full-paths",
     "start": "node dist/apps/api/src/server.js",
+    "seed": "DOTENV_CONFIG_PATH=../../.env tsx --import dotenv/config prisma/seed.ts",
     "test": "vitest run --coverage",
     "test:integration": "RUN_POSTGRES_INTEGRATION=1 vitest run test/integration --coverage.enabled=false"
   },
