@@ -264,7 +264,11 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server: FastifyTy
                 }
             }
 
-            await this.customerController.updateCustomer(req.user, id, req.body);
+            const result = await this.customerController.updateCustomer(req.user, id, req.body);
+            if (result !== undefined && "code" in result) {
+                return sendProblem(res, req, result.code, result.message);
+            }
+
             return res.status(200).send();
         }
     });

@@ -434,6 +434,27 @@ describe("customer routes", () => {
         );
     });
 
+    it("converts an update service error into Problem Details", async () => {
+        customerController.getCustomer.mockResolvedValueOnce(customer);
+        customerController.updateCustomer.mockResolvedValueOnce({
+            code: 503,
+            message: "Customer update unavailable."
+        });
+
+        const response = await app.inject({
+            method: "PATCH",
+            url: "/api/v1/customers?id=customer-123",
+            headers: { cookie: await accessCookie(app) },
+            payload: { name: "Ana Atualizada" }
+        });
+
+        expect(response.statusCode).toBe(503);
+        expectProblemDetails(response, {
+            status: 503,
+            detail: "Customer update unavailable."
+        });
+    });
+
     it("requires a customer ID for updates", async () => {
         const response = await app.inject({
             method: "PATCH",

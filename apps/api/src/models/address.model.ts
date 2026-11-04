@@ -32,19 +32,44 @@ export class AddressModel extends Model
         return this.db.orm.public.Addresses.where({ customerId }).first();
     }
 
-    public updateAddress(customerId: string, addressData: AddressUpdateData)
+    public async updateAddress(customerId: string, addressData: AddressUpdateData)
     {
-        if (addressData.number === undefined) {
+        const updates: Partial<Pick<
+            Models.public_Addresses,
+            "zipCode" | "street" | "number" | "complement" | "district" | "city" | "state"
+        >> = {};
+
+        if (addressData.zipCode !== undefined) {
+            updates.zipCode = this.toVarchar(addressData.zipCode, 8);
+        }
+        if (addressData.street !== undefined) {
+            updates.street = this.toVarchar(addressData.street, 150);
+        }
+        if (addressData.number !== undefined) {
+            updates.number = this.toVarchar(addressData.number, 10);
+        }
+        if (addressData.complement !== undefined) {
+            updates.complement = addressData.complement === null
+                ? null
+                : this.toVarchar(addressData.complement, 100);
+        }
+        if (addressData.district !== undefined) {
+            updates.district = this.toVarchar(addressData.district, 100);
+        }
+        if (addressData.city !== undefined) {
+            updates.city = this.toVarchar(addressData.city, 100);
+        }
+        if (addressData.state !== undefined) {
+            updates.state = this.toVarchar(addressData.state, 2);
+        }
+
+        if (Object.keys(updates).length === 0) {
             return null;
         }
 
         return this.db.orm.public.Addresses
             .where({ customerId })
-            .update({
-                number: addressData.number === null
-                    ? this.toVarchar("S/N", 10)
-                    : this.toVarchar(addressData.number, 10)
-            });
+            .update(updates);
     }
 
     public deleteAddress(customerId: string)
