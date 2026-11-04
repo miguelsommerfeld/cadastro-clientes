@@ -68,11 +68,80 @@ services:
     networks:
         - public_net
 
+  loki:
+    image: grafana/loki:3.5.0
+    restart: always
+    command: ["-config.file=/etc/loki/config.yml"]
+    volumes:
+        - ./observability/loki/config.yml:/etc/loki/config.yml:ro
+        - loki_data:/loki
+    networks:
+        - observability_net
+    healthcheck:
+        test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3100/ready || exit 1"]
+        timeout: 5s
+        retries: 2
+        start_period: 15s
+
+  alloy:
+    image: grafana/alloy:v1.10.2
+    restart: always
+    command:
+        - run
+        - --server.http.listen-addr=0.0.0.0:12345
+        - --storage.path=/var/lib/alloy/data
+        - /etc/alloy/config.alloy
+    volumes:
+        - ./observability/alloy/config.alloy:/etc/alloy/config.alloy:ro
+        - /var/run/docker.sock:/var/run/docker.sock:ro
+        - alloy_data:/var/lib/alloy/data
+    depends_on:
+        loki:
+            condition: service_healthy
+    networks:
+        - observability_net
+    healthcheck:
+        test: ["CMD", "bash", "-c", 'exec 3<>/dev/tcp/127.0.0.1/12345; printf "GET /-/healthy HTTP/1.0\r\nHost: localhost\r\nConnection: close\r\n\r\n" >&3; IFS= read -r status <&3; [[ "$$status" == *" 200 "* ]]']
+        timeout: 5s
+        retries: 2
+        start_period: 15s
+
+  grafana:
+    image: grafana/grafana:12.1.1
+    restart: always
+    environment:
+        GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+        GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD deve estar configurada no .env}
+        GF_USERS_ALLOW_SIGN_UP: "false"
+    ports:
+        - "127.0.0.1:3000:3000"
+    volumes:
+        - ./observability/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+        - ./observability/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+        - grafana_data:/var/lib/grafana
+    depends_on:
+        loki:
+            condition: service_healthy
+        alloy:
+            condition: service_healthy
+    networks:
+        - observability_net
+    healthcheck:
+        test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3000/api/health || exit 1"]
+        timeout: 5s
+        retries: 2
+        start_period: 20s
+
 networks:
   private_net:
     driver: bridge
   public_net:
     driver: bridge
+  observability_net:
+    driver: bridge
 
 volumes:
   postgres_data:
+  loki_data:
+  alloy_data:
+  grafana_data:

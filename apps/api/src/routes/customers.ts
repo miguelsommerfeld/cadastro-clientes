@@ -18,17 +18,19 @@ const problemDetailsSchema = z.object({
     type: z.string(),
     title: z.string(),
     status: z.number(),
-    detail: z.string()
+    detail: z.string(),
+    requestId: z.string().optional()
 });
 const protectedResponseSchemas = {
     401: problemDetailsSchema,
-    403: z.union([applicationErrorResponseSchema, problemDetailsSchema])
+    403: z.union([applicationErrorResponseSchema, problemDetailsSchema]),
+    500: problemDetailsSchema
 };
 
 const customersRoutes: FastifyPluginAsyncZod = async function (server: FastifyTypedInstance) {
     server.addHook("onRequest", authenticate);
 
-    server.setErrorHandler((error, _request, reply) => {
+    server.setErrorHandler((error, request, reply) => {
         const statusCode =
             error instanceof Error &&
             "statusCode" in error &&
@@ -43,9 +45,13 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server: FastifyTy
             });
         }
 
+        request.log.error({ err: error }, "Unhandled request error");
         return reply.status(500).send({
-            message: "Não foi possível concluir a solicitação.",
-            error: "Internal Server Error"
+            type: "/problems/internal-server-error",
+            title: "Internal Server Error",
+            status: 500,
+            detail: "Não foi possível concluir a solicitação.",
+            requestId: request.id
         });
     });
 
@@ -127,7 +133,6 @@ const customersRoutes: FastifyPluginAsyncZod = async function (server: FastifyTy
                 })]),
                 404: applicationErrorResponseSchema,
                 409: documentValidation,
-                500: documentValidation,
                 ...protectedResponseSchemas,
                 503: applicationErrorResponseSchema
             }

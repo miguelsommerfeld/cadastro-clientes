@@ -23,6 +23,7 @@ export default async (fastify: FastifyInstance) => {
                 status: 200
             }
         } catch (err) {
+            req.log.error({ err }, "Health check failed");
             return res.status(503).send({
                 status: 503,
                 message: "Serviço indisponível"
