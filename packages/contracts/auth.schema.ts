@@ -8,7 +8,8 @@ export const permissions = [
     "customer:write",
     "customer:trash",
     "customer:delete-permanent",
-    "user:manage"
+    "user:manage",
+    "user:delete-permanent"
 ] as const;
 
 export const rolePermissions = {
@@ -55,6 +56,19 @@ export const userSchema = z.object({
     updatedAt: z.string().nullable()
 });
 
+export const managedUserRoleSchema = z.enum(["OPERATOR", "VIEWER"]);
+export const managedUserRequestSchema = userRequestSchema.extend({
+    role: managedUserRoleSchema
+}).strict();
+export const managedUserUpdateSchema = z.object({
+    username: userRequestSchema.shape.username.optional(),
+    email: userRequestSchema.shape.email.optional(),
+    password: userRequestSchema.shape.password.optional(),
+    role: managedUserRoleSchema.optional()
+}).strict().refine((user) => Object.keys(user).length > 0, {
+    message: "Informe ao menos um campo para atualizar."
+});
+
 export const authRequestSchema = tenantRequestSchema.extend(userRequestSchema.shape).strict();
 export const loginRequestSchema = userRequestSchema.pick({ email: true, password: true }).strict();
 
@@ -91,6 +105,9 @@ export type TenantRequest = z.infer<typeof tenantRequestSchema>;
 export type TenantSchema = z.infer<typeof tenantSchema>;
 export type UserRequest = z.infer<typeof userRequestSchema>;
 export type UserSchema = z.infer<typeof userSchema>;
+export type ManagedUserRole = z.infer<typeof managedUserRoleSchema>;
+export type ManagedUserRequest = z.infer<typeof managedUserRequestSchema>;
+export type ManagedUserUpdate = z.infer<typeof managedUserUpdateSchema>;
 export type AuthRequest = z.infer<typeof authRequestSchema>;
 export type LoginRequest = z.infer<typeof loginRequestSchema>;
 export type AuthSessionUser = z.infer<typeof authSessionUserSchema>;

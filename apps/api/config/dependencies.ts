@@ -9,6 +9,10 @@ import { AuthModel } from '@/models/auth.model';
 import { AuthRepository } from '@/repositories/auth.repository';
 import { AuthService } from '@/services/auth.service';
 import { AuthTokenService } from '@/services/auth.token.service';
+import { UserModel } from '@/models/user.model';
+import { UserRepository } from '@/repositories/user.repository';
+import { UserService } from '@/services/user.service';
+import { UserController } from '@/controllers/user.controller';
 import { FastifyBaseLogger, FastifyInstance, RawReplyDefaultExpression, RawRequestDefaultExpression, RawServerDefault } from 'fastify';
 import { ZodTypeProvider } from '@fastify/type-provider-zod';
 
@@ -27,8 +31,15 @@ export default fp(async (server) => {
     const customerService: CustomerService = new CustomerService(customerRepository, authService);
     const customerController: CustomerController = new CustomerController(customerService);
 
+    // User dependencies
+    const userModel = new UserModel();
+    const userRepository = new UserRepository(userModel);
+    const userService = new UserService(userRepository);
+    const userController = new UserController(userService);
+
     server.decorate('customerController', customerController);
     server.decorate('authController', authController);
+    server.decorate('userController', userController);
 });
 
 export type FastifyTypedInstance = FastifyInstance<
