@@ -326,11 +326,13 @@ O relatório HTML fica em `apps/e2e/playwright-report`. Em falhas, o Playwright 
 
 Os testes da API usam Vitest e `Fastify.inject()`, com dublês nos limites dos serviços; a suíte unitária não precisa de banco nem de rede. A cobertura de linhas e branches de `apps/api/src` deve permanecer em pelo menos 80%, e o comando falha se ficar abaixo desse limite.
 
-O teste de isolamento entre tenants com PostgreSQL real é opt-in e não roda no `npm test` padrão. Aponte `TEST_DATABASE_URL` para um banco de teste PostgreSQL com as migrações aplicadas e execute:
+O teste de isolamento entre tenants com PostgreSQL real não roda no `npm test` padrão. O comando abaixo cria uma stack Docker temporária e isolada, aplica as migrações e a remove ao terminar:
 
 ```bash
-TEST_DATABASE_URL=postgresql://usuario:senha@localhost:5432/banco_teste npm run test:integration --workspace @cadastro-clientes/api-v1
+npm run test:integration --workspace @cadastro-clientes/api-v1
 ```
+
+Para reutilizar um banco PostgreSQL de teste já migrado, informe `TEST_DATABASE_URL` antes do comando. Nesse caso, a stack Docker temporária não é criada.
 
 ## Modelos e validações
 
@@ -353,6 +355,8 @@ TEST_DATABASE_URL=postgresql://usuario:senha@localhost:5432/banco_teste npm run 
 ./start.sh --seed   # Cria ou atualiza os dados de demonstração
 ./start.sh --reset --seed  # Redefine o banco e recria os dados de demonstração
 ./start.sh --qa     # Executa QA E2E em ambiente isolado
+./start.sh --test   # Executa os testes unitários da API
+./start.sh --test-integration  # Executa os testes de integração da API
 ```
 
 > **Atenção:** `./start.sh --reset` apaga permanentemente os dados persistidos no banco, mas preserva os logs coletados. O script solicita que você digite `RESET` antes de continuar.

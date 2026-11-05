@@ -9,6 +9,8 @@ readonly GRAFANA_SERVICE="grafana"
 readonly DATABASE_VOLUME="cadastro-clientes_postgres_data"
 LOADING_PID=""
 COMPOSE_OUTPUT_FILE=""
+INTEGRATION_TEST_DB_NAME=""
+INTEGRATION_TEST_DB_URL=""
 
 usage() {
   cat <<'EOF'
@@ -20,6 +22,8 @@ Opções:
   --logs           Acompanha os logs dos serviços.
   --seed           Inicia a aplicação e cria ou atualiza os dados de demonstração.
   --qa             Executa os testes E2E em ambiente isolado e gera o relatório HTML.
+  --test            Executa os testes unitários da API.
+  --test-integration Executa os testes de integração da API.
   --reset          Apaga os dados do banco e inicia a aplicação novamente
                    (exige confirmação explícita; preserva os logs).
   --reset --seed   Apaga os dados, inicia a aplicação e recria os dados de demonstração.
@@ -39,11 +43,48 @@ stop_loading() {
   fi
 }
 
+drop_integration_test_db() {
+  local db_name="${1:-$INTEGRATION_TEST_DB_NAME}"
+  local db_url="${2:-$INTEGRATION_TEST_DB_URL}"
+  if [[ -z "$db_name" || -z "$db_url" ]]; then
+    return 0
+  fi
+
+  TEST_DB_NAME="$db_name" TEST_DATABASE_URL="$db_url" node -e '
+    const { Client } = require("pg");
+    const dbName = process.env.TEST_DB_NAME;
+    const adminUrl = new URL(process.env.TEST_DATABASE_URL);
+    adminUrl.pathname = "/postgres";
+
+    async function drop() {
+      let client = new Client({ connectionString: adminUrl.toString() });
+      try {
+        await client.connect();
+      } catch {
+        adminUrl.pathname = "/template1";
+        client = new Client({ connectionString: adminUrl.toString() });
+        await client.connect();
+      }
+      await client.query(`
+        SELECT pg_terminate_backend(pid)
+        FROM pg_stat_activity
+        WHERE datname = $1 AND pid <> pg_backend_pid();
+      `, [dbName]);
+      await client.query(`DROP DATABASE IF EXISTS "${dbName.replace(/"/g, "\"\"")}"`);
+      await client.end();
+    }
+    drop().catch(() => {});
+  ' 2>/dev/null || true
+  INTEGRATION_TEST_DB_NAME=""
+  INTEGRATION_TEST_DB_URL=""
+}
+
 cleanup() {
   stop_loading
   if [[ -n "$COMPOSE_OUTPUT_FILE" && -f "$COMPOSE_OUTPUT_FILE" ]]; then
     rm -f -- "$COMPOSE_OUTPUT_FILE"
   fi
+  drop_integration_test_db
 }
 
 trap cleanup EXIT
@@ -218,11 +259,103 @@ run_qa() {
   bash "$SCRIPT_DIR/apps/e2e/run-qa.sh"
 }
 
+run_api_tests() {
+  npm run test --workspace @cadastro-clientes/api-v1
+}
+
+run_api_integration_tests() {
+  check_prerequisites
+  ensure_env_file
+
+  if [[ -f "$SCRIPT_DIR/.env" ]]; then
+    set -a
+    # shellcheck disable=SC1091
+    source "$SCRIPT_DIR/.env"
+    set +a
+  fi
+
+  local test_db_url="${TEST_DATABASE_URL:-}"
+  if [[ -z "$test_db_url" ]]; then
+    fail "TEST_DATABASE_URL não configurada no .env nem no ambiente."
+  fi
+
+  test_db_url="${test_db_url/\$\{DB_USER\}/${DB_USER:-postgres}}"
+  test_db_url="${test_db_url/\$\{DB_PASSWORD\}/${DB_PASSWORD:-postgres}}"
+  export TEST_DATABASE_URL="$test_db_url"
+
+  compose up -d db
+  if ! wait_for_service "db"; then
+    fail "Não foi possível iniciar o serviço de banco de dados para os testes."
+  fi
+
+  local test_db_name
+  test_db_name="$(node -e '
+    const url = new URL(process.env.TEST_DATABASE_URL);
+    const name = url.pathname.replace(/^\//, "");
+    if (!name) process.exit(1);
+    process.stdout.write(name);
+  ' 2>/dev/null || true)"
+
+  if [[ -z "$test_db_name" ]]; then
+    fail "Não foi possível extrair o nome do banco de dados a partir de TEST_DATABASE_URL."
+  fi
+
+  INTEGRATION_TEST_DB_NAME="$test_db_name"
+  INTEGRATION_TEST_DB_URL="$test_db_url"
+
+  create_test_db() {
+    TEST_DB_NAME="$test_db_name" TEST_DATABASE_URL="$test_db_url" node -e '
+      const { Client } = require("pg");
+      const dbName = process.env.TEST_DB_NAME;
+      const adminUrl = new URL(process.env.TEST_DATABASE_URL);
+      adminUrl.pathname = "/postgres";
+
+      async function create() {
+        let client = new Client({ connectionString: adminUrl.toString() });
+        try {
+          await client.connect();
+        } catch {
+          adminUrl.pathname = "/template1";
+          client = new Client({ connectionString: adminUrl.toString() });
+          await client.connect();
+        }
+        await client.query(`
+          SELECT pg_terminate_backend(pid)
+          FROM pg_stat_activity
+          WHERE datname = $1 AND pid <> pg_backend_pid();
+        `, [dbName]);
+        await client.query(`DROP DATABASE IF EXISTS "${dbName.replace(/"/g, "\"\"")}"`);
+        await client.query(`CREATE DATABASE "${dbName.replace(/"/g, "\"\"")}"`);
+        await client.end();
+      }
+      create().catch(err => {
+        console.error("Erro ao criar o banco de dados de teste:", err.message);
+        process.exit(1);
+      });
+    '
+  }
+
+  create_test_db
+
+  (
+    cd "$SCRIPT_DIR/apps/api"
+    DB_URL="$test_db_url" npx prisma db migrate --db "$test_db_url" >/dev/null
+  )
+
+  local test_status=0
+  npm run test:integration --workspace @cadastro-clientes/api-v1 || test_status=$?
+
+  drop_integration_test_db "$test_db_name" "$test_db_url"
+  return "$test_status"
+}
+
 main() {
   local option
   local reset_requested=false
   local seed_requested=false
   local qa_requested=false
+  local test_requested=false
+  local integration_test_requested=false
   local stop_requested=false
   local logs_requested=false
 
@@ -251,6 +384,12 @@ main() {
       --qa)
         qa_requested=true
         ;;
+      --test)
+        test_requested=true
+        ;;
+      --test-integration)
+        integration_test_requested=true
+        ;;
       *)
         usage >&2
         fail "Opção desconhecida: $option"
@@ -265,6 +404,24 @@ main() {
     fi
     check_prerequisites
     run_qa
+    return
+  fi
+
+  if [[ "$test_requested" == true ]]; then
+    if (( $# != 1 )); then
+      usage >&2
+      fail "A opção --test não pode ser combinada com outras opções."
+    fi
+    run_api_tests
+    return
+  fi
+
+  if [[ "$integration_test_requested" == true ]]; then
+    if (( $# != 1 )); then
+      usage >&2
+      fail "A opção --test-integration não pode ser combinada com outras opções."
+    fi
+    run_api_integration_tests
     return
   fi
 

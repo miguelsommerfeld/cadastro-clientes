@@ -100,6 +100,7 @@ describe("section 7 document validator examples", () => {
         const result = addressRequestSchema.parse({
             zipCode: "01001-000",
             street: " Praça da Sé ",
+            number: " 1 ",
             district: " Sé ",
             city: " São Paulo ",
             state: "SP"
@@ -108,6 +109,7 @@ describe("section 7 document validator examples", () => {
         expect(result).toMatchObject({
             zipCode: "01001000",
             street: "Praça da Sé",
+            number: "1",
             district: "Sé",
             city: "São Paulo"
         });
