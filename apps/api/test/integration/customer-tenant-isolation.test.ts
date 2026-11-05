@@ -6,7 +6,7 @@ import { customerRegistrationSchema } from "@packages/contracts/customer.schema"
 import type { CustomerRepository } from "@/repositories/customer.repository";
 
 const databaseUrl = process.env["TEST_DATABASE_URL"];
-const enabled = process.env["RUN_POSTGRES_INTEGRATION"] === "1";
+const enabled = process.env["RUN_POSTGRES_INTEGRATION"] === "1" && Boolean(databaseUrl);
 
 type TenantFixture = {
     tenantId: string;
