@@ -1,6 +1,6 @@
-# Cadastro de Clientes
+# Cadastro de Clientes (v2.0.0)
 
-Aplicação para cadastro e gerenciamento de clientes pessoa física e pessoa jurídica. O projeto está organizado como um monorepo: uma API REST, uma interface web e contratos compartilhados entre os pacotes.
+Aplicação para cadastro e gerenciamento de clientes pessoa física e pessoa jurídica. O projeto está organizado como um monorepo: uma API REST, uma interface web, suíte de testes de ponta a ponta e contratos compartilhados entre os pacotes.
 
 > **Documentação interativa:** a API usa Swagger. Inicie a aplicação e acesse [`http://localhost:3333/docs`](http://localhost:3333/docs) para consultar os detalhes dos endpoints e experimentar as requisições.
 
@@ -225,6 +225,9 @@ As rotas de clientes exigem o cookie `access_token`; o tenant usado nas consulta
 | `POST` | `/api/v1/auth/refresh` | Cookie `refresh_token` | Faz a rotação do refresh token e emite novo access token. |
 | `POST` | `/api/v1/auth/logout` | Cookies de autenticação | Revoga a sessão e limpa os cookies; a operação é idempotente. |
 | `GET` | `/api/v1/auth/me` | Cookie `access_token` | Retorna o usuário, tenant, role e permissões, ou `null` se não houver sessão válida. |
+| `GET` | `/api/v1/users` | — | Lista os usuários do tenant (permissão `user:manage`). |
+| `POST` | `/api/v1/users` | Corpo JSON | Cria um novo usuário no tenant com papel e senha inicial (permissão `user:manage`). |
+| `PATCH` | `/api/v1/users?id={id}` | Query obrigatória `id`; corpo JSON parcial | Altera nome ou papel de um usuário do tenant (permissão `user:manage`). |
 | `GET` | `/api/v1/customers` | Query opcional `id` | Lista clientes ativos; com `id`, retorna um cliente. Retorna `404` se o ID não for encontrado entre os ativos. |
 | `GET` | `/api/v1/customers/deleted` | — | Lista clientes na lixeira (removidos logicamente). |
 | `POST` | `/api/v1/customers` | Corpo JSON | Cadastra um cliente e seu endereço. Retorna `201` e `Location` para o cadastro criado. |
@@ -329,7 +332,7 @@ Os testes da API usam Vitest e `Fastify.inject()`, com dublês nos limites dos s
 O teste de isolamento entre tenants com PostgreSQL real não roda no `npm test` padrão. O comando abaixo cria uma stack Docker temporária e isolada, aplica as migrações e a remove ao terminar:
 
 ```bash
-npm run test:integration --workspace @cadastro-clientes/api-v1
+npm run test:integration --workspace @cadastro-clientes/api-v2
 ```
 
 Para reutilizar um banco PostgreSQL de teste já migrado, informe `TEST_DATABASE_URL` antes do comando. Nesse caso, a stack Docker temporária não é criada.
@@ -370,3 +373,4 @@ Os pacotes também têm comandos próprios:
 | `apps/api` | `npm start` | Inicia a API compilada. |
 | `apps/web` | `npm run dev` | Inicia o servidor de desenvolvimento Vite. |
 | `apps/web` | `npm run build` | Verifica os tipos e gera a versão de produção. |
+| `apps/e2e` | `npm test` | Executa a suíte de testes E2E com Playwright. |

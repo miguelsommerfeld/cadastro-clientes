@@ -144,7 +144,7 @@ server.register(fastifySwagger, {
     openapi: {
         info: {
             title: "Cadastro de Clientes",
-            version: "1.0.0"
+            version: "2.0.0"
         },
         components: {
             securitySchemes: {

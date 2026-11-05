@@ -1,13 +1,13 @@
 {
   "name": "monorepo",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "workspaces": [
     "packages/**",
     "apps/**"
   ],
   "scripts": {
-    "test": "npm run test --workspace @cadastro-clientes/api-v1",
+    "test": "npm run test --workspace @cadastro-clientes/api-v2",
     "test:e2e": "bash ./apps/e2e/run-qa.sh",
     "seed": "bash ./start.sh --seed",
     "clear": "rm -rf node_modules && rm -rf apps/**/node_modules && rm -rf packages/**/node_modules && rm -rf package-lock.json"
