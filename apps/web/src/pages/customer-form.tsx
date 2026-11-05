@@ -7,15 +7,20 @@ import {
   type CustomerFormField,
   type CustomerFormSection,
 } from '@/components/home/customer-form-fields'
-import { createCustomer, getCustomer, updateCustomer } from '@/services/customerService'
-import { ApiError } from '@/services/apiClient'
+import {
+  createCustomer,
+  customerRequestData,
+  getCustomer,
+  updateCustomer,
+} from '@/services/customer.service'
+import { ApiError } from '@/services/api.client'
 import type { Customer, CustomerDraft } from '@/types/customer'
 import {
   formatCnpj,
   formatCpf,
   formatPhoneInput,
   formatZipCode,
-} from '@/utils/inputMasks'
+} from '@/utils/input.masks'
 
 const wizardStep = {
   identity: 0,
@@ -174,7 +179,20 @@ export function CustomerFormPage({ customerId }: { customerId?: string }) {
     let result
     if (stepToValidate === wizardStep.identity) {
       const { customerIdentitySchema } = await import('@packages/contracts/customer.schema')
-      result = customerIdentitySchema.safeParse(draft)
+      const identity = draft.personType === 'INDIVIDUAL'
+        ? {
+            personType: draft.personType,
+            name: draft.name,
+            document: draft.document,
+            birthDate: draft.birthDate,
+          }
+        : {
+            personType: draft.personType,
+            name: draft.name,
+            document: draft.document,
+            tradeName: draft.tradeName?.trim() || undefined,
+          }
+      result = customerIdentitySchema.safeParse(identity)
     } else if (stepToValidate === wizardStep.contact) {
       const { customerContactSchema } = await import('@packages/contracts/customer.schema')
       result = customerContactSchema.safeParse(draft)
@@ -182,7 +200,7 @@ export function CustomerFormPage({ customerId }: { customerId?: string }) {
       const { addressRequestSchema } = await import('@packages/contracts/address.schema')
       result = addressRequestSchema.safeParse({
         ...draft.address,
-        number: draft.address.number || null,
+        number: draft.address.number,
       })
     } else if (editing) {
       const { customerUpdateSchema } = await import('@packages/contracts/customer.schema')
@@ -193,17 +211,16 @@ export function CustomerFormPage({ customerId }: { customerId?: string }) {
         ...(draft.personType === 'COMPANY'
           ? { tradeName: draft.tradeName?.trim() || null }
           : { birthDate: draft.birthDate || null }),
-        address: { number: draft.address.number || null },
+        address: {
+          ...draft.address,
+          zipCode: draft.address.zipCode.replace(/\D/g, ''),
+          number: draft.address.number,
+          complement: draft.address.complement || null,
+        },
       })
     } else {
       const { customersRequestSchema } = await import('@packages/contracts/customer.schema')
-      result = customersRequestSchema.safeParse({
-        ...draft,
-        tradeName: draft.personType === 'COMPANY'
-          ? draft.tradeName?.trim() || undefined
-          : undefined,
-        address: { ...draft.address, number: draft.address.number || null },
-      })
+      result = customersRequestSchema.safeParse(customerRequestData(draft))
     }
 
     if (result.success) {
@@ -231,15 +248,24 @@ export function CustomerFormPage({ customerId }: { customerId?: string }) {
     event.preventDefault()
     if (saving) return
 
-    if (!editing && step < wizardStep.review) {
-      if (await validateStep(step)) setStep((current) => current + 1)
-      return
-    }
-    if (
-      !(await validateStep(
-        editing ? customerEditValidationStep : wizardStep.review,
-      ))
-    ) {
+    try {
+      if (!editing && step < wizardStep.review) {
+        if (await validateStep(step)) setStep((current) => current + 1)
+        return
+      }
+      if (
+        !(await validateStep(
+          editing ? customerEditValidationStep : wizardStep.review,
+        ))
+      ) {
+        return
+      }
+    } catch (cause) {
+      setLoadError(
+        cause instanceof Error
+          ? cause.message
+          : 'Não foi possível validar os dados. Tente novamente.',
+      )
       return
     }
 
@@ -267,14 +293,17 @@ export function CustomerFormPage({ customerId }: { customerId?: string }) {
         await navigate({ to: '/' })
         return
       }
-      if (!editing && cause instanceof ApiError && cause.status === 409) {
-        setErrors({
-          document: cause.message || 'Este documento já está cadastrado na lixeira.',
-        })
-        setTrashSuggestion(true)
-        setStep(wizardStep.identity)
-        setErrorFocusVersion((version) => version + 1)
-        return
+      if (cause instanceof ApiError) {
+        const field = apiErrorField(cause.message)
+        if (field) {
+          setErrors({ [field]: cause.message })
+          setStep(field === 'email' ? wizardStep.contact : wizardStep.identity)
+          setErrorFocusVersion((version) => version + 1)
+          if (!editing && field === 'document' && cause.message.toLowerCase().includes('lixeira')) {
+            setTrashSuggestion(true)
+          }
+          return
+        }
       }
       if (cause instanceof Error && cause.message) setLoadError(cause.message)
       else setLoadError('Não foi possível salvar o cliente. Tente novamente.')
@@ -572,6 +601,7 @@ function customerToDraft(customer: Customer): CustomerDraft {
       ...customer.address,
       zipCode: formatZipCode(customer.address?.zipCode ?? ''),
       number: customer.address?.number ?? '',
+      complement: customer.address?.complement ?? '',
     },
   }
 }
@@ -593,6 +623,21 @@ function mapIssues(
     }
   }
   return mapped
+}
+
+function apiErrorField(message: string): 'document' | 'email' | undefined {
+  const normalizedMessage = message.toLocaleLowerCase('pt-BR')
+  if (normalizedMessage.includes('e-mail') || normalizedMessage.includes('email')) {
+    return 'email'
+  }
+  if (
+    normalizedMessage.includes('documento') ||
+    normalizedMessage.includes('cpf') ||
+    normalizedMessage.includes('cnpj')
+  ) {
+    return 'document'
+  }
+  return undefined
 }
 
 const customerFieldNames: Record<CustomerFormField, true> = {

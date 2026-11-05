@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
-import { lookupAddressByZipCode } from '@/services/addressService'
+import { lookupAddressByZipCode } from '@/services/address.service'
 import {
   formatCnpj,
   formatCpf,
   formatPhoneInput,
   formatZipCode,
-} from '@/utils/inputMasks'
+} from '@/utils/input.masks'
 import type { CustomerDraft } from '@/types/customer'
 
 export type CustomerFormSection = 'identity' | 'contact' | 'address' | 'all'
@@ -181,7 +181,7 @@ export function CustomerFormFields({
               <Field
                 id="customer-birth-date"
                 label="Data de nascimento"
-                required={!editing}
+                required
                 error={errors.birthDate}
               >
                 <input
@@ -273,6 +273,7 @@ function AddressFields({
   const [lookupResult, setLookupResult] = useState<{
     zipCode: string
     status: 'success' | 'error'
+    message?: string
   }>()
   const zipCode = address.zipCode.replace(/\D/g, '')
   const lookupState =
@@ -296,7 +297,11 @@ function AddressFields({
       .then((result) => {
         if (controller.signal.aborted) return
         if (!result) {
-          setLookupResult({ zipCode, status: 'error' })
+          setLookupResult({
+            zipCode,
+            status: 'error',
+            message: 'CEP não encontrado. Confira o número e tente novamente.',
+          })
           return
         }
         onChange('street', result.street)
@@ -305,8 +310,16 @@ function AddressFields({
         onChange('state', result.state)
         setLookupResult({ zipCode, status: 'success' })
       })
-      .catch(() => {
-        if (!controller.signal.aborted) setLookupResult({ zipCode, status: 'error' })
+      .catch((cause: unknown) => {
+        if (controller.signal.aborted) return
+        setLookupResult({
+          zipCode,
+          status: 'error',
+          message:
+            cause instanceof Error
+              ? cause.message
+              : 'Não foi possível consultar o CEP. Preencha o endereço manualmente.',
+        })
       })
     return () => controller.abort()
   }, [
@@ -328,13 +341,12 @@ function AddressFields({
         <Field
           id="customer-zip-code"
           label="CEP"
-          required={!editing}
+          required
           error={errors['address.zipCode']}
         >
           <input
             id="customer-zip-code"
-            required={!editing}
-            readOnly={editing}
+            required
             maxLength={9}
             inputMode="numeric"
             autoComplete="postal-code"
@@ -360,16 +372,14 @@ function AddressFields({
             >
               {lookupState === 'loading' && 'Buscando endereço pelo CEP...'}
               {lookupState === 'success' && 'Endereço preenchido pelo CEP.'}
-              {lookupState === 'error' &&
-                'Não foi possível consultar o CEP. Preencha o endereço manualmente.'}
+              {lookupState === 'error' && lookupResult?.message}
             </span>
           )}
         </Field>
-        <Field id="customer-city" label="Cidade" required={!editing} error={errors['address.city']}>
+        <Field id="customer-city" label="Cidade" required error={errors['address.city']}>
           <input
             id="customer-city"
-            required={!editing}
-            readOnly={editing}
+            required
             maxLength={100}
             autoComplete="address-level2"
             value={address.city}
@@ -382,13 +392,12 @@ function AddressFields({
         <Field
           id="customer-street"
           label="Logradouro"
-          required={!editing}
+          required
           error={errors['address.street']}
         >
           <input
             id="customer-street"
-            required={!editing}
-            readOnly={editing}
+            required
             maxLength={150}
             autoComplete="street-address"
             value={address.street}
@@ -398,9 +407,15 @@ function AddressFields({
             aria-describedby={errors['address.street'] ? 'customer-street-error' : undefined}
           />
         </Field>
-        <Field id="customer-number" label="Número" error={errors['address.number']}>
+        <Field
+          id="customer-number"
+          label="Número"
+          required
+          error={errors['address.number']}
+        >
           <input
             id="customer-number"
+            required
             maxLength={10}
             value={address.number}
             onChange={(event) => onChange('number', event.target.value)}
@@ -412,13 +427,10 @@ function AddressFields({
         <Field
           id="customer-complement"
           label="Complemento"
-          required={!editing}
           error={errors['address.complement']}
         >
           <input
             id="customer-complement"
-            readOnly={editing}
-            required={!editing}
             maxLength={100}
             value={address.complement}
             onChange={(event) => onChange('complement', event.target.value)}
@@ -432,13 +444,12 @@ function AddressFields({
         <Field
           id="customer-district"
           label="Bairro"
-          required={!editing}
+          required
           error={errors['address.district']}
         >
           <input
             id="customer-district"
-            required={!editing}
-            readOnly={editing}
+            required
             maxLength={100}
             value={address.district}
             onChange={(event) => onChange('district', event.target.value)}
@@ -449,35 +460,24 @@ function AddressFields({
             }
           />
         </Field>
-        <Field id="customer-state" label="UF" required={!editing} error={errors['address.state']}>
-          {editing ? (
-            <input
-              id="customer-state"
-              readOnly
-              value={address.state}
-              className={inputClass}
-              aria-invalid={Boolean(errors['address.state'])}
-              aria-describedby={errors['address.state'] ? 'customer-state-error' : undefined}
-            />
-          ) : (
-            <select
-              id="customer-state"
-              required
-              autoComplete="address-level1"
-              value={address.state}
-              onChange={(event) => onChange('state', event.target.value)}
-              className={inputClass}
-              aria-invalid={Boolean(errors['address.state'])}
-              aria-describedby={errors['address.state'] ? 'customer-state-error' : undefined}
-            >
-              <option value="">Selecione a UF</option>
-              {states.map(([uf, name]) => (
-                <option key={uf} value={uf}>
-                  {uf} — {name}
-                </option>
-              ))}
-            </select>
-          )}
+        <Field id="customer-state" label="UF" required error={errors['address.state']}>
+          <select
+            id="customer-state"
+            required
+            autoComplete="address-level1"
+            value={address.state}
+            onChange={(event) => onChange('state', event.target.value)}
+            className={inputClass}
+            aria-invalid={Boolean(errors['address.state'])}
+            aria-describedby={errors['address.state'] ? 'customer-state-error' : undefined}
+          >
+            <option value="">Selecione a UF</option>
+            {states.map(([uf, name]) => (
+              <option key={uf} value={uf}>
+                {uf} — {name}
+              </option>
+            ))}
+          </select>
         </Field>
       </div>
     </section>

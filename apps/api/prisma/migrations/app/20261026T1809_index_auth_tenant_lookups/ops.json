@@ -1,0 +1,284 @@
+[
+  {
+    "id": "dropConstraint.customers.customers_tenant_id_key",
+    "label": "Drop constraint \"customers_tenant_id_key\" on \"customers\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "customers_tenant_id_key",
+        "table": "customers"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"customers_tenant_id_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "customers_tenant_id_key",
+          "public",
+          "\"public\".\"customers\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop constraint \"customers_tenant_id_key\"",
+        "sql": "ALTER TABLE \"public\".\"customers\" DROP CONSTRAINT \"customers_tenant_id_key\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"customers_tenant_id_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "customers_tenant_id_key",
+          "public",
+          "\"public\".\"customers\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dropConstraint.sessions.sessions_user_id_key",
+    "label": "Drop constraint \"sessions_user_id_key\" on \"sessions\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "sessions_user_id_key",
+        "table": "sessions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"sessions_user_id_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "sessions_user_id_key",
+          "public",
+          "\"public\".\"sessions\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop constraint \"sessions_user_id_key\"",
+        "sql": "ALTER TABLE \"public\".\"sessions\" DROP CONSTRAINT \"sessions_user_id_key\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"sessions_user_id_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "sessions_user_id_key",
+          "public",
+          "\"public\".\"sessions\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dropConstraint.users.users_tenant_id_key",
+    "label": "Drop constraint \"users_tenant_id_key\" on \"users\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "users_tenant_id_key",
+        "table": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"users_tenant_id_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "users_tenant_id_key",
+          "public",
+          "\"public\".\"users\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop constraint \"users_tenant_id_key\"",
+        "sql": "ALTER TABLE \"public\".\"users\" DROP CONSTRAINT \"users_tenant_id_key\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"users_tenant_id_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "users_tenant_id_key",
+          "public",
+          "\"public\".\"users\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.customers.customers_tenant_id_idx_41c0d441",
+    "label": "Create index \"customers_tenant_id_idx_41c0d441\" on \"customers\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "customers_tenant_id_idx_41c0d441",
+        "table": "customers"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"customers_tenant_id_idx_41c0d441\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"customers_tenant_id_idx_41c0d441\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"customers_tenant_id_idx_41c0d441\"",
+        "sql": "CREATE INDEX \"customers_tenant_id_idx_41c0d441\" ON \"public\".\"customers\" (\"tenant_id\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"customers_tenant_id_idx_41c0d441\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"customers_tenant_id_idx_41c0d441\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.sessions.sessions_refresh_token_hash_idx_703bb9a0",
+    "label": "Create index \"sessions_refresh_token_hash_idx_703bb9a0\" on \"sessions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "sessions_refresh_token_hash_idx_703bb9a0",
+        "table": "sessions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"sessions_refresh_token_hash_idx_703bb9a0\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"sessions_refresh_token_hash_idx_703bb9a0\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"sessions_refresh_token_hash_idx_703bb9a0\"",
+        "sql": "CREATE INDEX \"sessions_refresh_token_hash_idx_703bb9a0\" ON \"public\".\"sessions\" (\"refresh_token_hash\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"sessions_refresh_token_hash_idx_703bb9a0\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"sessions_refresh_token_hash_idx_703bb9a0\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.sessions.sessions_user_id_idx_6c952402",
+    "label": "Create index \"sessions_user_id_idx_6c952402\" on \"sessions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "sessions_user_id_idx_6c952402",
+        "table": "sessions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"sessions_user_id_idx_6c952402\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"sessions_user_id_idx_6c952402\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"sessions_user_id_idx_6c952402\"",
+        "sql": "CREATE INDEX \"sessions_user_id_idx_6c952402\" ON \"public\".\"sessions\" (\"user_id\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"sessions_user_id_idx_6c952402\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"sessions_user_id_idx_6c952402\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.users.users_tenant_id_idx_41c0d441",
+    "label": "Create index \"users_tenant_id_idx_41c0d441\" on \"users\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "users_tenant_id_idx_41c0d441",
+        "table": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"users_tenant_id_idx_41c0d441\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"users_tenant_id_idx_41c0d441\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"users_tenant_id_idx_41c0d441\"",
+        "sql": "CREATE INDEX \"users_tenant_id_idx_41c0d441\" ON \"public\".\"users\" (\"tenant_id\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"users_tenant_id_idx_41c0d441\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"users_tenant_id_idx_41c0d441\""
+        ]
+      }
+    ]
+  }
+]
