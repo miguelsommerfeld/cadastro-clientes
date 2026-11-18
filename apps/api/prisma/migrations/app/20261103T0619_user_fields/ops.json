@@ -1,0 +1,752 @@
+[
+  {
+    "id": "dropConstraint.addresses.addresses_id_key",
+    "label": "Drop constraint \"addresses_id_key\" on \"addresses\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "addresses_id_key",
+        "table": "addresses"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"addresses_id_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "addresses_id_key",
+          "public",
+          "\"public\".\"addresses\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop constraint \"addresses_id_key\"",
+        "sql": "ALTER TABLE \"public\".\"addresses\" DROP CONSTRAINT \"addresses_id_key\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"addresses_id_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "addresses_id_key",
+          "public",
+          "\"public\".\"addresses\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dropConstraint.customers.customers_email_key",
+    "label": "Drop constraint \"customers_email_key\" on \"customers\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "customers_email_key",
+        "table": "customers"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"customers_email_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "customers_email_key",
+          "public",
+          "\"public\".\"customers\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop constraint \"customers_email_key\"",
+        "sql": "ALTER TABLE \"public\".\"customers\" DROP CONSTRAINT \"customers_email_key\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"customers_email_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "customers_email_key",
+          "public",
+          "\"public\".\"customers\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dropConstraint.customers.customers_id_key",
+    "label": "Drop constraint \"customers_id_key\" on \"customers\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "customers_id_key",
+        "table": "customers"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"customers_id_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "customers_id_key",
+          "public",
+          "\"public\".\"customers\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop constraint \"customers_id_key\"",
+        "sql": "ALTER TABLE \"public\".\"customers\" DROP CONSTRAINT \"customers_id_key\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"customers_id_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "customers_id_key",
+          "public",
+          "\"public\".\"customers\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dropConstraint.customers.customers_tenant_id_document_key",
+    "label": "Drop constraint \"customers_tenant_id_document_key\" on \"customers\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "customers_tenant_id_document_key",
+        "table": "customers"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"customers_tenant_id_document_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "customers_tenant_id_document_key",
+          "public",
+          "\"public\".\"customers\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop constraint \"customers_tenant_id_document_key\"",
+        "sql": "ALTER TABLE \"public\".\"customers\" DROP CONSTRAINT \"customers_tenant_id_document_key\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"customers_tenant_id_document_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "customers_tenant_id_document_key",
+          "public",
+          "\"public\".\"customers\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dropConstraint.tenants.tenants_id_key",
+    "label": "Drop constraint \"tenants_id_key\" on \"tenants\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "tenants_id_key",
+        "table": "tenants"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"tenants_id_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "tenants_id_key",
+          "public",
+          "\"public\".\"tenants\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop constraint \"tenants_id_key\"",
+        "sql": "ALTER TABLE \"public\".\"tenants\" DROP CONSTRAINT \"tenants_id_key\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"tenants_id_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "tenants_id_key",
+          "public",
+          "\"public\".\"tenants\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dropIndex.users.users_tenant_id_idx_41c0d441",
+    "label": "Drop index \"users_tenant_id_idx_41c0d441\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "users_tenant_id_idx_41c0d441",
+        "table": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"users_tenant_id_idx_41c0d441\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"users_tenant_id_idx_41c0d441\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop index \"users_tenant_id_idx_41c0d441\"",
+        "sql": "DROP INDEX \"public\".\"users_tenant_id_idx_41c0d441\"",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"users_tenant_id_idx_41c0d441\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"users_tenant_id_idx_41c0d441\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dropConstraint.users.users_email_key",
+    "label": "Drop constraint \"users_email_key\" on \"users\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "users_email_key",
+        "table": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"users_email_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "users_email_key",
+          "public",
+          "\"public\".\"users\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop constraint \"users_email_key\"",
+        "sql": "ALTER TABLE \"public\".\"users\" DROP CONSTRAINT \"users_email_key\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"users_email_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "users_email_key",
+          "public",
+          "\"public\".\"users\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dropConstraint.users.users_id_key",
+    "label": "Drop constraint \"users_id_key\" on \"users\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "users_id_key",
+        "table": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"users_id_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "users_id_key",
+          "public",
+          "\"public\".\"users\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop constraint \"users_id_key\"",
+        "sql": "ALTER TABLE \"public\".\"users\" DROP CONSTRAINT \"users_id_key\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"users_id_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "users_id_key",
+          "public",
+          "\"public\".\"users\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.customers.created_by",
+    "label": "Add column \"created_by\" to \"customers\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "created_by",
+        "table": "customers"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"created_by\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "customers",
+          "created_by"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"created_by\"",
+        "sql": "ALTER TABLE \"public\".\"customers\" ADD COLUMN \"created_by\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"created_by\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "customers",
+          "created_by"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.customers.deleted_by",
+    "label": "Add column \"deleted_by\" to \"customers\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "deleted_by",
+        "table": "customers"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"deleted_by\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "customers",
+          "deleted_by"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"deleted_by\"",
+        "sql": "ALTER TABLE \"public\".\"customers\" ADD COLUMN \"deleted_by\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"deleted_by\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "customers",
+          "deleted_by"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.customers.updated_by",
+    "label": "Add column \"updated_by\" to \"customers\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "updated_by",
+        "table": "customers"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"updated_by\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "customers",
+          "updated_by"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"updated_by\"",
+        "sql": "ALTER TABLE \"public\".\"customers\" ADD COLUMN \"updated_by\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"updated_by\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "customers",
+          "updated_by"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.users.is_active",
+    "label": "Add column \"is_active\" to \"users\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "is_active",
+        "table": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"is_active\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "is_active"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"is_active\"",
+        "sql": "ALTER TABLE \"public\".\"users\" ADD COLUMN \"is_active\" bool DEFAULT true NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"is_active\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "is_active"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.users.last_login_at",
+    "label": "Add column \"last_login_at\" to \"users\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "last_login_at",
+        "table": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"last_login_at\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "last_login_at"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"last_login_at\"",
+        "sql": "ALTER TABLE \"public\".\"users\" ADD COLUMN \"last_login_at\" timestamptz"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"last_login_at\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "last_login_at"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "primaryKey.sessions.sessions_pkey",
+    "label": "Add primary key on \"sessions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "primaryKey",
+        "name": "sessions_pkey",
+        "table": "sessions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure primary key \"sessions_pkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "sessions_pkey",
+          "public",
+          "\"public\".\"sessions\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add primary key \"sessions_pkey\"",
+        "sql": "ALTER TABLE \"public\".\"sessions\" ADD CONSTRAINT \"sessions_pkey\" PRIMARY KEY (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify primary key \"sessions_pkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "sessions_pkey",
+          "public",
+          "\"public\".\"sessions\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "primaryKey.tenants.tenants_pkey",
+    "label": "Add primary key on \"tenants\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "primaryKey",
+        "name": "tenants_pkey",
+        "table": "tenants"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure primary key \"tenants_pkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "tenants_pkey",
+          "public",
+          "\"public\".\"tenants\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add primary key \"tenants_pkey\"",
+        "sql": "ALTER TABLE \"public\".\"tenants\" ADD CONSTRAINT \"tenants_pkey\" PRIMARY KEY (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify primary key \"tenants_pkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "tenants_pkey",
+          "public",
+          "\"public\".\"tenants\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "primaryKey.users.users_pkey",
+    "label": "Add primary key on \"users\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "primaryKey",
+        "name": "users_pkey",
+        "table": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure primary key \"users_pkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "users_pkey",
+          "public",
+          "\"public\".\"users\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add primary key \"users_pkey\"",
+        "sql": "ALTER TABLE \"public\".\"users\" ADD CONSTRAINT \"users_pkey\" PRIMARY KEY (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify primary key \"users_pkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "users_pkey",
+          "public",
+          "\"public\".\"users\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.customers.customers_tenant_id_document_email_key",
+    "label": "Add unique constraint on \"customers\" (tenant_id, document, email)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "customers_tenant_id_document_email_key",
+        "table": "customers"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"customers_tenant_id_document_email_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "customers_tenant_id_document_email_key",
+          "public",
+          "\"public\".\"customers\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"customers_tenant_id_document_email_key\"",
+        "sql": "ALTER TABLE \"public\".\"customers\" ADD CONSTRAINT \"customers_tenant_id_document_email_key\" UNIQUE (\"tenant_id\", \"document\", \"email\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"customers_tenant_id_document_email_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "customers_tenant_id_document_email_key",
+          "public",
+          "\"public\".\"customers\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.users.users_tenant_id_email_idx_511e4059",
+    "label": "Create index \"users_tenant_id_email_idx_511e4059\" on \"users\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "users_tenant_id_email_idx_511e4059",
+        "table": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"users_tenant_id_email_idx_511e4059\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"users_tenant_id_email_idx_511e4059\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"users_tenant_id_email_idx_511e4059\"",
+        "sql": "CREATE INDEX \"users_tenant_id_email_idx_511e4059\" ON \"public\".\"users\" (\"tenant_id\", \"email\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"users_tenant_id_email_idx_511e4059\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"users_tenant_id_email_idx_511e4059\""
+        ]
+      }
+    ]
+  }
+]

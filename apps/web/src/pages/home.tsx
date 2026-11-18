@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
+import { useAuth } from '@/auth/auth-context'
 import { CustomerActionDialog } from '@/components/home/customer-action-dialog'
 import { CustomerActionError } from '@/components/home/customer-action-error'
 import { CustomerToast } from '@/components/home/customer-toast'
@@ -12,10 +13,11 @@ import { CustomerListToolbar } from '@/components/home/customer-list-toolbar'
 import { HomeHeader } from '@/components/home/home-header'
 import { HomeNavigation } from '@/components/home/home-navigation'
 import { HomeOverview } from '@/components/home/home-overview'
-import { useHomeCustomers } from '@/hooks/useHomeCustomers'
+import { useHomeCustomers } from '@/hooks/use.home.customers'
 import type { Customer, CustomerAction, CustomerView } from '@/types/customer'
 
 export default function HomePage({ view }: { view: CustomerView }) {
+  const auth = useAuth()
   const home = useHomeCustomers(view)
   const navigate = useNavigate()
   const [pendingAction, setPendingAction] = useState<CustomerAction | null>(null)
@@ -100,7 +102,10 @@ export default function HomePage({ view }: { view: CustomerView }) {
             <CustomerListToolbar
               view={view}
               searchValue={home.searchInput}
+              sort={home.sort}
+              order={home.order}
               onSearchChange={home.setSearchInput}
+              onSort={home.changeSort}
             />
             <CustomerActionError
               message={home.actionError}
@@ -112,6 +117,7 @@ export default function HomePage({ view }: { view: CustomerView }) {
               <CustomerListState
                 type="error"
                 errorMessage={home.loadError}
+                canCreateCustomer={auth.hasPermission('customer:write')}
                 onCreateCustomer={() => void navigate({ to: '/clientes/novo' })}
                 onClearSearch={() => home.setSearchInput('')}
                 onRetry={home.refresh}
@@ -120,6 +126,7 @@ export default function HomePage({ view }: { view: CustomerView }) {
             {listState === 'empty' && (
               <CustomerListState
                 type="empty"
+                canCreateCustomer={auth.hasPermission('customer:write')}
                 onCreateCustomer={() =>
                   void navigate({ to: '/clientes/novo' })
                 }
@@ -131,6 +138,7 @@ export default function HomePage({ view }: { view: CustomerView }) {
               <CustomerListState
                 type="no-results"
                 query={home.query}
+                canCreateCustomer={auth.hasPermission('customer:write')}
                 onCreateCustomer={() => void navigate({ to: '/clientes/novo' })}
                 onClearSearch={() => home.setSearchInput('')}
                 onRetry={home.refresh}
@@ -139,6 +147,7 @@ export default function HomePage({ view }: { view: CustomerView }) {
             {listState === 'trash-empty' && (
               <CustomerListState
                 type="trash-empty"
+                canCreateCustomer={auth.hasPermission('customer:write')}
                 onCreateCustomer={() => void navigate({ to: '/clientes/novo' })}
                 onClearSearch={() => home.setSearchInput('')}
                 onRetry={home.refresh}

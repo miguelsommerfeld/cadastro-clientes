@@ -1,0 +1,58 @@
+discovery.docker "containers" {
+  host             = "unix:///var/run/docker.sock"
+  refresh_interval = "5s"
+}
+
+discovery.relabel "application_containers" {
+  targets = discovery.docker.containers.targets
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    regex         = "db|api|web"
+    action        = "keep"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "service"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    replacement   = "$1"
+    target_label  = "container"
+  }
+}
+
+loki.source.docker "application_containers" {
+  host             = "unix:///var/run/docker.sock"
+  targets          = discovery.relabel.application_containers.output
+  refresh_interval = "5s"
+  forward_to       = [loki.process.application_containers.receiver]
+}
+
+loki.process "application_containers" {
+  stage.regex {
+    expression = `(?i)(?P<level>trace|debug|info|warn|warning|error|fatal|panic|log|notice)`
+  }
+
+  stage.template {
+    source   = "level"
+    template = `{{ if .Value }}{{ ToLower .Value }}{{ else }}info{{ end }}`
+  }
+
+  stage.labels {
+    values = {
+      level = "",
+    }
+  }
+
+  forward_to = [loki.write.local.receiver]
+}
+
+loki.write "local" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}

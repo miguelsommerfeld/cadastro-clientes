@@ -28,6 +28,7 @@ export function CustomerPagination({
       <div className="flex items-center justify-between gap-2 sm:justify-end">
         <button
           type="button"
+          aria-label="Página anterior"
           disabled={currentPage <= 1}
           onClick={() => onChangePage(currentPage - 1)}
           className="flex min-h-11 items-center gap-1 rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-teal-700"
@@ -40,6 +41,7 @@ export function CustomerPagination({
         </span>
         <button
           type="button"
+          aria-label="Próxima página"
           disabled={currentPage >= totalPages}
           onClick={() => onChangePage(currentPage + 1)}
           className="flex min-h-11 items-center gap-1 rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-teal-700"

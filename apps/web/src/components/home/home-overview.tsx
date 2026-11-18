@@ -19,7 +19,7 @@ export function HomeOverview({ view, loading, customerCount }: HomeOverviewProps
         <h1 className="text-[1.75rem] font-bold tracking-tight text-slate-950 sm:text-3xl">
           {isTrash ? 'Lixeira de clientes' : 'Seus clientes'}
         </h1>
-        <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500 sm:text-base">
+        <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600 sm:text-base">
           {isTrash
             ? 'Clientes removidos podem ser restaurados ou excluídos definitivamente.'
             : 'Gerencie seus relacionamentos em um só lugar.'}

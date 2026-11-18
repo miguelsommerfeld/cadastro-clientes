@@ -9,7 +9,10 @@ import {
 
 const customerFields = {
     name: z.string().trim().min(3, "O nome deve conter ao menos 3 caracteres").max(150),
-    email: z.email("Insira um formato de e-mail válido para realizar o cadastro").max(254),
+    email: z.email("Insira um formato de e-mail válido para realizar o cadastro")
+        .trim()
+        .toLowerCase()
+        .max(254),
     phone: z.phone().country('BR')
         .transform((value) => value.nationalNumber.replace(/\D/g, ''))
         .refine((phone) => phone.length >= 10 && phone.length <= 11, {
@@ -39,7 +42,7 @@ const companyCustomerFields = {
     personType: z.literal('COMPANY'),
     document: z.string("O CNPJ inserido precisa ser válido")
         .refine((document) => cnpj.isValid(document), { error: "CNPJ inválido" })
-        .transform((document) => document.replace(/\D/g, '')),
+        .transform((document) => document.replace(/[^0-9a-z]/gi, "").toUpperCase()),
     tradeName: z.string().trim().min(1).max(150).optional()
 }
 
@@ -49,13 +52,13 @@ export const customerIdentitySchema = z.discriminatedUnion('personType', [
       name: customerFields.name,
       document: individualCustomerFields.document,
       birthDate: birthDateSchema
-    }),
+    }).strict(),
     z.object({
       personType: z.literal('COMPANY'),
       name: customerFields.name,
       document: companyCustomerFields.document,
       tradeName: companyCustomerFields.tradeName
-    })
+    }).strict()
 ])
 
 export const customerContactSchema = z.object({
@@ -63,20 +66,14 @@ export const customerContactSchema = z.object({
     phone: customerFields.phone
 })
 
-const customerDocumentUpdateSchema = z.string("O documento inserido precisa ser válido")
-    .refine((document) => cpf.isValid(document) || cnpj.isValid(document), {
-        error: "CPF ou CNPJ inválido"
-    })
-    .transform((document) => document.replace(/\D/g, ''))
-
 export const customerRegistrationSchema = z.discriminatedUnion('personType', [
-    z.object(individualCustomerFields).loose(),
-    z.object(companyCustomerFields).loose()
+    z.object(individualCustomerFields).strict(),
+    z.object(companyCustomerFields).strict()
 ])
 
 export const customersRequestSchema = z.discriminatedUnion('personType', [
-    z.object({ ...individualCustomerFields, address: addressRequestSchema }).loose(),
-    z.object({ ...companyCustomerFields, address: addressRequestSchema }).loose()
+    z.object({ ...individualCustomerFields, address: addressRequestSchema }).strict(),
+    z.object({ ...companyCustomerFields, address: addressRequestSchema }).strict()
 ])
 
 const customerResponseFields = {
@@ -87,8 +84,11 @@ const customerResponseFields = {
     phone: z.string(),
     address: addressResponseSchema.optional(),
     createdAt: z.iso.datetime(),
+    createdBy: z.string().nullable(),
     updatedAt: z.iso.datetime().optional(),
-    deletedAt: z.iso.datetime().nullable()
+    updatedBy: z.string().nullable(),
+    deletedAt: z.iso.datetime().nullable(),
+    deletedBy: z.string().nullable()
 }
 
 export const customersResponseSchema = z.discriminatedUnion('personType', [
@@ -106,12 +106,11 @@ export const customersResponseSchema = z.discriminatedUnion('personType', [
 
 export const customerUpdateSchema = z.object({
     ...customerFields,
-    document: customerDocumentUpdateSchema,
     tradeName: z.string().trim().min(1).max(150).nullable(),
     birthDate: birthDateSchema.nullable(),
     email: customerFields.email.nullable(),
     address: addressUpdateSchema
-}).partial()
+}).partial().strict()
 
 export type CustomerRegistration = output<typeof customerRegistrationSchema>
 export type CustomerResponse = output<typeof customersResponseSchema>

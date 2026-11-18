@@ -5,23 +5,32 @@ readonly SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 readonly API_HEALTH_TIMEOUT=180
 readonly POLL_INTERVAL=5
 readonly API_SERVICE="api"
+readonly GRAFANA_SERVICE="grafana"
+readonly DATABASE_VOLUME="cadastro-clientes_postgres_data"
 LOADING_PID=""
 COMPOSE_OUTPUT_FILE=""
+INTEGRATION_TEST_DB_NAME=""
+INTEGRATION_TEST_DB_URL=""
 
 usage() {
   cat <<'EOF'
 Uso: ./start.sh [opção]
 
 Opções:
-  --help    Mostra esta ajuda.
-  --stop    Para os serviços sem apagar os dados.
-  --logs    Acompanha os logs dos serviços.
-  --reset   Apaga o banco de dados e inicia a aplicação novamente
-            (exige confirmação explícita).
+  --help           Mostra esta ajuda.
+  --stop           Para os serviços sem apagar os dados.
+  --logs           Acompanha os logs dos serviços.
+  --seed           Inicia a aplicação e cria ou atualiza os dados de demonstração.
+  --qa             Executa os testes E2E em ambiente isolado e gera o relatório HTML.
+  --test            Executa os testes unitários da API.
+  --test-integration Executa os testes de integração da API.
+  --reset          Apaga os dados do banco e inicia a aplicação novamente
+                   (exige confirmação explícita; preserva os logs).
+  --reset --seed   Apaga os dados, inicia a aplicação e recria os dados de demonstração.
 
 Sem opções, cria .env a partir de .env.example se necessário, constrói
-as imagens, inicia os serviços e aguarda a API ficar saudável (limite:
-180 segundos).
+as imagens, inicia os serviços e aguarda a API e o Grafana ficarem
+saudáveis (limite de 180 segundos para cada serviço).
 EOF
 }
 
@@ -34,11 +43,48 @@ stop_loading() {
   fi
 }
 
+drop_integration_test_db() {
+  local db_name="${1:-$INTEGRATION_TEST_DB_NAME}"
+  local db_url="${2:-$INTEGRATION_TEST_DB_URL}"
+  if [[ -z "$db_name" || -z "$db_url" ]]; then
+    return 0
+  fi
+
+  TEST_DB_NAME="$db_name" TEST_DATABASE_URL="$db_url" node -e '
+    const { Client } = require("pg");
+    const dbName = process.env.TEST_DB_NAME;
+    const adminUrl = new URL(process.env.TEST_DATABASE_URL);
+    adminUrl.pathname = "/postgres";
+
+    async function drop() {
+      let client = new Client({ connectionString: adminUrl.toString() });
+      try {
+        await client.connect();
+      } catch {
+        adminUrl.pathname = "/template1";
+        client = new Client({ connectionString: adminUrl.toString() });
+        await client.connect();
+      }
+      await client.query(`
+        SELECT pg_terminate_backend(pid)
+        FROM pg_stat_activity
+        WHERE datname = $1 AND pid <> pg_backend_pid();
+      `, [dbName]);
+      await client.query(`DROP DATABASE IF EXISTS "${dbName.replace(/"/g, "\"\"")}"`);
+      await client.end();
+    }
+    drop().catch(() => {});
+  ' 2>/dev/null || true
+  INTEGRATION_TEST_DB_NAME=""
+  INTEGRATION_TEST_DB_URL=""
+}
+
 cleanup() {
   stop_loading
   if [[ -n "$COMPOSE_OUTPUT_FILE" && -f "$COMPOSE_OUTPUT_FILE" ]]; then
     rm -f -- "$COMPOSE_OUTPUT_FILE"
   fi
+  drop_integration_test_db
 }
 
 trap cleanup EXIT
@@ -107,18 +153,6 @@ ensure_env_file() {
 
     cp "$SCRIPT_DIR/.env.example" "$SCRIPT_DIR/.env"
     printf 'Arquivo .env criado a partir de .env.example.\n'
-    printf 'Configure as variáveis em .env e execute ./start.sh novamente.\n' >&2
-    return 1
-  fi
-
-  local compare_status=0
-  cmp -s "$SCRIPT_DIR/.env" "$SCRIPT_DIR/.env.example" || compare_status=$?
-  if (( compare_status == 0 )); then
-    printf 'O arquivo .env ainda está idêntico a .env.example.\n' >&2
-    printf 'Configure as variáveis em .env e execute ./start.sh novamente.\n' >&2
-    return 1
-  elif (( compare_status > 1 )); then
-    fail "Não foi possível comparar .env com .env.example."
   fi
 }
 
@@ -126,14 +160,15 @@ compose() {
   docker compose --project-directory "$SCRIPT_DIR" "$@"
 }
 
-wait_for_api() {
+wait_for_service() {
+  local service="$1"
   local elapsed=0
   local container_id
   local health_status
   local wait_step
 
   while (( elapsed < API_HEALTH_TIMEOUT )); do
-    container_id="$(compose ps -q "$API_SERVICE" 2>/dev/null || true)"
+    container_id="$(compose ps -q "$service" 2>/dev/null || true)"
     if [[ -n "$container_id" ]]; then
       health_status="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}no-healthcheck{{end}}' "$container_id" 2>/dev/null || true)"
       if [[ "$health_status" == "healthy" ]]; then
@@ -141,7 +176,7 @@ wait_for_api() {
       fi
 
       if [[ "$health_status" == "no-healthcheck" ]]; then
-        printf 'A API não possui healthcheck configurado.\n' >&2
+        printf 'O serviço %s não possui healthcheck configurado.\n' "$service" >&2
         return 1
       fi
     fi
@@ -154,7 +189,8 @@ wait_for_api() {
     elapsed=$((elapsed + wait_step))
   done
 
-  printf 'Tempo limite de %s segundos excedido ao aguardar a API.\n' "$API_HEALTH_TIMEOUT" >&2
+  printf 'Tempo limite de %s segundos excedido ao aguardar o serviço %s.\n' \
+    "$API_HEALTH_TIMEOUT" "$service" >&2
   return 1
 }
 
@@ -188,10 +224,17 @@ start_application() {
     return 1
   fi
 
-  if ! wait_for_api; then
+  if ! wait_for_service "$API_SERVICE"; then
     stop_loading
     printf 'Logs relevantes dos serviços:\n' >&2
-    compose logs --tail=100 api db web >&2 || true
+    compose logs --tail=100 api db web loki alloy grafana >&2 || true
+    return 1
+  fi
+
+  if ! wait_for_service "$GRAFANA_SERVICE"; then
+    stop_loading
+    printf 'Logs relevantes dos serviços:\n' >&2
+    compose logs --tail=100 api db web loki alloy grafana >&2 || true
     return 1
   fi
 
@@ -203,33 +246,200 @@ Aplicação pronta!
   Interface:    http://localhost:8080
   API:          http://localhost:3333
   Documentação: http://localhost:3333/docs
+  Logs:         http://localhost:3000
 EOF
 }
 
-main() {
-  local option="${1:-}"
+run_seed() {
+  printf 'Criando dados de demonstração...\n'
+  compose exec -T api npm run seed
+}
 
-  if (( $# > 1 )); then
-    usage >&2
-    fail "Informe apenas uma opção."
+run_qa() {
+  bash "$SCRIPT_DIR/apps/e2e/run-qa.sh"
+}
+
+run_api_tests() {
+  npm run test --workspace @cadastro-clientes/api-v2
+}
+
+run_api_integration_tests() {
+  check_prerequisites
+  ensure_env_file
+
+  if [[ -f "$SCRIPT_DIR/.env" ]]; then
+    set -a
+    # shellcheck disable=SC1091
+    source "$SCRIPT_DIR/.env"
+    set +a
   fi
 
-  case "$option" in
-    --help|-h)
-      usage
-      return 0
-      ;;
-    ""|--stop|--logs|--reset)
-      ;;
-    *)
-      usage >&2
-      fail "Opção desconhecida: $option"
-      ;;
-  esac
+  local test_db_url="${TEST_DATABASE_URL:-}"
+  if [[ -z "$test_db_url" ]]; then
+    fail "TEST_DATABASE_URL não configurada no .env nem no ambiente."
+  fi
 
-  if [[ -z "$option" ]]; then
-    ensure_env_file || return 1
-  elif [[ "$option" == "--reset" ]]; then
+  test_db_url="${test_db_url/\$\{DB_USER\}/${DB_USER:-postgres}}"
+  test_db_url="${test_db_url/\$\{DB_PASSWORD\}/${DB_PASSWORD:-postgres}}"
+  export TEST_DATABASE_URL="$test_db_url"
+
+  compose up -d db
+  if ! wait_for_service "db"; then
+    fail "Não foi possível iniciar o serviço de banco de dados para os testes."
+  fi
+
+  local test_db_name
+  test_db_name="$(node -e '
+    const url = new URL(process.env.TEST_DATABASE_URL);
+    const name = url.pathname.replace(/^\//, "");
+    if (!name) process.exit(1);
+    process.stdout.write(name);
+  ' 2>/dev/null || true)"
+
+  if [[ -z "$test_db_name" ]]; then
+    fail "Não foi possível extrair o nome do banco de dados a partir de TEST_DATABASE_URL."
+  fi
+
+  INTEGRATION_TEST_DB_NAME="$test_db_name"
+  INTEGRATION_TEST_DB_URL="$test_db_url"
+
+  create_test_db() {
+    TEST_DB_NAME="$test_db_name" TEST_DATABASE_URL="$test_db_url" node -e '
+      const { Client } = require("pg");
+      const dbName = process.env.TEST_DB_NAME;
+      const adminUrl = new URL(process.env.TEST_DATABASE_URL);
+      adminUrl.pathname = "/postgres";
+
+      async function create() {
+        let client = new Client({ connectionString: adminUrl.toString() });
+        try {
+          await client.connect();
+        } catch {
+          adminUrl.pathname = "/template1";
+          client = new Client({ connectionString: adminUrl.toString() });
+          await client.connect();
+        }
+        await client.query(`
+          SELECT pg_terminate_backend(pid)
+          FROM pg_stat_activity
+          WHERE datname = $1 AND pid <> pg_backend_pid();
+        `, [dbName]);
+        await client.query(`DROP DATABASE IF EXISTS "${dbName.replace(/"/g, "\"\"")}"`);
+        await client.query(`CREATE DATABASE "${dbName.replace(/"/g, "\"\"")}"`);
+        await client.end();
+      }
+      create().catch(err => {
+        console.error("Erro ao criar o banco de dados de teste:", err.message);
+        process.exit(1);
+      });
+    '
+  }
+
+  create_test_db
+
+  (
+    cd "$SCRIPT_DIR/apps/api"
+    DB_URL="$test_db_url" npx prisma db migrate --db "$test_db_url" >/dev/null
+  )
+
+  local test_status=0
+  npm run test:integration --workspace @cadastro-clientes/api-v2 || test_status=$?
+
+  drop_integration_test_db "$test_db_name" "$test_db_url"
+  return "$test_status"
+}
+
+main() {
+  local option
+  local reset_requested=false
+  local seed_requested=false
+  local qa_requested=false
+  local test_requested=false
+  local integration_test_requested=false
+  local stop_requested=false
+  local logs_requested=false
+
+  for option in "$@"; do
+    case "$option" in
+      --help|-h)
+        if (( $# != 1 )); then
+          usage >&2
+          fail "A opção --help não pode ser combinada com outras opções."
+        fi
+        usage
+        return 0
+        ;;
+      --stop)
+        stop_requested=true
+        ;;
+      --logs)
+        logs_requested=true
+        ;;
+      --reset)
+        reset_requested=true
+        ;;
+      --seed)
+        seed_requested=true
+        ;;
+      --qa)
+        qa_requested=true
+        ;;
+      --test)
+        test_requested=true
+        ;;
+      --test-integration)
+        integration_test_requested=true
+        ;;
+      *)
+        usage >&2
+        fail "Opção desconhecida: $option"
+        ;;
+    esac
+  done
+
+  if [[ "$qa_requested" == true ]]; then
+    if (( $# != 1 )); then
+      usage >&2
+      fail "A opção --qa não pode ser combinada com outras opções."
+    fi
+    check_prerequisites
+    run_qa
+    return
+  fi
+
+  if [[ "$test_requested" == true ]]; then
+    if (( $# != 1 )); then
+      usage >&2
+      fail "A opção --test não pode ser combinada com outras opções."
+    fi
+    run_api_tests
+    return
+  fi
+
+  if [[ "$integration_test_requested" == true ]]; then
+    if (( $# != 1 )); then
+      usage >&2
+      fail "A opção --test-integration não pode ser combinada com outras opções."
+    fi
+    run_api_integration_tests
+    return
+  fi
+
+  if [[ "$stop_requested" == true || "$logs_requested" == true ]]; then
+    if (( $# != 1 )); then
+      usage >&2
+      fail "As opções --stop e --logs não podem ser combinadas com outras opções."
+    fi
+    check_prerequisites
+    if [[ "$stop_requested" == true ]]; then
+      compose stop
+    else
+      compose logs --follow
+    fi
+    return
+  fi
+
+  if [[ "$reset_requested" == true ]]; then
     printf 'Atenção: isso apagará permanentemente os dados do banco de dados.\n'
     printf 'Digite RESET para confirmar: '
     local confirmation
@@ -237,26 +447,24 @@ main() {
       printf 'Reset cancelado; nenhum dado foi removido.\n'
       return 1
     fi
-    ensure_env_file || return 1
   fi
+
+  ensure_env_file || return 1
 
   check_prerequisites
 
-  case "$option" in
-    --stop)
-      compose stop
-      ;;
-    --logs)
-      compose logs --follow
-      ;;
-    --reset)
-      compose down --volumes
-      start_application
-      ;;
-    *)
-      start_application
-      ;;
-  esac
+  if [[ "$reset_requested" == true ]]; then
+    compose down
+    if docker volume inspect "$DATABASE_VOLUME" >/dev/null 2>&1; then
+      docker volume rm "$DATABASE_VOLUME" >/dev/null
+    fi
+  fi
+
+  start_application
+
+  if [[ "$seed_requested" == true ]]; then
+    run_seed
+  fi
 }
 
 main "$@"

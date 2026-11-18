@@ -6,13 +6,15 @@
     "paths": {
       "@/*": ["./src/*"],
       "@db": ["./prisma/db.ts"],
-      "@packages/*": ["./../../packages/*.ts"]
+      "@packages/*": ["./../../packages/*.ts"],
+      "@config/*": ["./config/*.ts"]
     },
     "target": "ES2022",
     "module": "preserve",
     "moduleResolution": "bundler",
     "outDir": "dist",
     "rootDir": "./../../",
+    "rewriteRelativeImportExtensions": true,
     "sourceMap": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
@@ -23,8 +25,8 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "allowImportingTsExtensions": true,
-    "noEmit": true,
+    "noEmit": false,
     "resolveJsonModule": true
   },
-  "include": ["./src/**/*.ts", "./config/**/*.ts", "./../../packages/*.ts"]
+  "include": ["./src/**/*.ts", "./config/**/*.ts", "./prisma/seed.ts", "./../../packages/*.ts"]
 }

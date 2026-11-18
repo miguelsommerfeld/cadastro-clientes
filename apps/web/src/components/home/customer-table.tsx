@@ -1,6 +1,6 @@
 import { CustomerActions } from '@/components/home/customer-actions'
 import { CustomerIdentity } from '@/components/home/customer-identity'
-import { formatDate, formatDocument, formatPhone, locationLabel } from '@/utils/customerPresentation'
+import { formatDate, formatDocument, formatPhone, locationLabel } from '@/utils/customer.presentation'
 import type { Customer, CustomerAction, CustomerSortKey, CustomerView, SortOrder } from '@/types/customer'
 
 type CustomerTableProps = {

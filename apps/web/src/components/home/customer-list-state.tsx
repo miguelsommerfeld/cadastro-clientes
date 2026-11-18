@@ -4,6 +4,7 @@ type CustomerListStateProps = {
   type: 'empty' | 'no-results' | 'trash-empty' | 'error'
   query?: string
   errorMessage?: string
+  canCreateCustomer?: boolean
   onCreateCustomer: () => void
   onClearSearch: () => void
   onRetry: () => void
@@ -35,6 +36,7 @@ export function CustomerListState({
   type,
   query = '',
   errorMessage = '',
+  canCreateCustomer = true,
   onCreateCustomer,
   onClearSearch,
   onRetry,
@@ -71,7 +73,7 @@ export function CustomerListState({
       <p className="mt-2 max-w-sm text-sm leading-6 text-slate-600">
         {content.description(query)}
       </p>
-      {type === 'empty' && (
+      {type === 'empty' && canCreateCustomer && (
         <button
           type="button"
           onClick={onCreateCustomer}

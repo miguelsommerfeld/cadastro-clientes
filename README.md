@@ -1,6 +1,6 @@
-# Cadastro de Clientes
+# Cadastro de Clientes (v2.0.0)
 
-Aplicação para cadastro e gerenciamento de clientes pessoa física e pessoa jurídica. O projeto está organizado como um monorepo: uma API REST, uma interface web e contratos compartilhados entre os pacotes.
+Aplicação para cadastro e gerenciamento de clientes pessoa física e pessoa jurídica. O projeto está organizado como um monorepo: uma API REST, uma interface web, suíte de testes de ponta a ponta e contratos compartilhados entre os pacotes.
 
 > **Documentação interativa:** a API usa Swagger. Inicie a aplicação e acesse [`http://localhost:3333/docs`](http://localhost:3333/docs) para consultar os detalhes dos endpoints e experimentar as requisições.
 
@@ -14,6 +14,8 @@ Aplicação para cadastro e gerenciamento de clientes pessoa física e pessoa ju
 - [URLs locais](#urls-locais)
 - [Front-end](#front-end)
 - [API](#api)
+- [Seeds de demonstração](#seeds-de-demonstração)
+- [Testes](#testes)
 - [Modelos e validações](#modelos-e-validações)
 - [Comandos úteis](#comandos-úteis)
 
@@ -26,8 +28,12 @@ Aplicação para cadastro e gerenciamento de clientes pessoa física e pessoa ju
 - Consulta de clientes ativos e consulta individual por ID.
 - Atualização parcial dos dados de um cliente.
 - Remoção lógica, listagem de clientes removidos e restauração.
-- Exclusão permanente de clientes removidos.
+- Exclusão permanente de clientes ativos ou removidos.
 - Verificação de saúde da API e documentação interativa via Swagger.
+- Cadastro de conta e tenant, login e manutenção de sessão com JWT e cookies seguros.
+- Gestão de usuários do tenant, papéis e permissões aplicados às telas e ações da interface.
+- Renovação transparente da sessão, redirecionamento para login e retorno à rota protegida.
+- Logs centralizados de banco, API e interface no Grafana, coletados pelo Alloy e armazenados no Loki.
 
 As telas ficam disponíveis em:
 
@@ -35,6 +41,9 @@ As telas ficam disponíveis em:
 - `/clientes/novo` — cadastro em quatro etapas.
 - `/clientes/:id/editar` — edição.
 - `/lixeira` — clientes removidos.
+- `/entrar` — login.
+- `/criar-conta` — cadastro da empresa e do primeiro administrador.
+- `/usuarios` — gestão dos usuários do tenant (permissão `user:manage`).
 
 Caminhos desconhecidos exibem uma página 404.
 
@@ -47,6 +56,7 @@ Caminhos desconhecidos exibem uma página 404.
 | Persistência | PostgreSQL 18, Prisma ORM |
 | Interface web | React 19, TypeScript, Vite 8 |
 | Servidor web | Nginx |
+| Logs | Grafana Alloy, Loki e Grafana |
 | Execução local | Docker e Docker Compose |
 
 ## Estrutura do projeto
@@ -63,9 +73,14 @@ Caminhos desconhecidos exibem uma página 404.
 │   │       ├── repositories/   # Camada de repositório
 │   │       ├── routes/         # Rotas Fastify
 │   │       └── services/       # Regras de negócio
+│   ├── e2e/                    # QA da interface com Playwright
 │   └── web/                    # Interface React servida pelo Nginx
 ├── packages/
 │   └── contracts/              # Schemas Zod compartilhados
+├── observability/
+│   ├── alloy/                  # Coleta dos logs dos containers
+│   ├── grafana/                # Provisionamento do datasource e dashboard
+│   └── loki/                   # Retenção e armazenamento de logs
 ├── docker-compose.yml
 ├── start.sh                    # Inicialização e comandos auxiliares
 └── .env.example
@@ -74,9 +89,9 @@ Caminhos desconhecidos exibem uma página 404.
 ## Pré-requisitos
 
 - Docker Engine ou Docker Desktop em execução.
-- Docker Compose v2 ou superior.
+- Docker Compose v2.24 ou superior.
 
-O script `start.sh` verifica os pré-requisitos antes de iniciar os serviços. Não é necessário instalar Node.js ou PostgreSQL na máquina para usar a configuração via Docker Compose.
+O script `start.sh` verifica os pré-requisitos antes de iniciar os serviços. Não é necessário instalar Node.js ou PostgreSQL na máquina para usar a configuração via Docker Compose. Quando o `.env` não existe, ele é criado automaticamente a partir de `.env.example` e seus valores padrão já permitem executar a aplicação localmente.
 
 ## Configuração e inicialização
 
@@ -96,6 +111,10 @@ O script `start.sh` verifica os pré-requisitos antes de iniciar os serviços. N
    ```
 
    `DB_URL` é a URL usada pela API e pelas migrações. No ambiente do Compose, o host do banco é `db`. Use uma senha local segura e mantenha o arquivo `.env` fora do controle de versão.
+   Configure também `JWT_SECRET` com pelo menos 32 caracteres aleatórios, por exemplo com `openssl rand -base64 32`.
+   Defina `SEED_USER_PASSWORD` com uma senha de ao menos 8 caracteres para os usuários criados pelo seed de demonstração.
+   Troque o valor de exemplo de `GRAFANA_ADMIN_PASSWORD` por uma senha local forte e, se desejar, ajuste `GRAFANA_ADMIN_USER`.
+   O `.env.example` define `NODE_ENV=development` para uso local; em outros ambientes, use `NODE_ENV=production` para ativar o atributo `Secure` nos cookies.
 
 3. Inicie a aplicação a partir da raiz do repositório:
 
@@ -103,7 +122,7 @@ O script `start.sh` verifica os pré-requisitos antes de iniciar os serviços. N
    ./start.sh
    ```
 
-   O script constrói as imagens, inicia PostgreSQL, API e interface web, aplica as migrações do banco e aguarda a API ficar saudável. Na primeira execução, o Docker pode levar alguns minutos para baixar imagens e construir os serviços.
+   O script constrói as imagens, inicia PostgreSQL, API, interface web e a stack de logs, aplica as migrações do banco e aguarda a API e o Grafana ficarem saudáveis. Na primeira execução, o Docker pode levar alguns minutos para baixar imagens e construir os serviços.
 
 ## URLs locais
 
@@ -113,6 +132,13 @@ O script `start.sh` verifica os pré-requisitos antes de iniciar os serviços. N
 | API | [`http://localhost:3333`](http://localhost:3333) |
 | Swagger UI | [`http://localhost:3333/docs`](http://localhost:3333/docs) |
 | Health check | [`http://localhost:3333/health`](http://localhost:3333/health) |
+| Grafana | [`http://localhost:3000`](http://localhost:3000) |
+
+### Logs centralizados
+
+API, Nginx e PostgreSQL escrevem na saída padrão. Um único agente Alloy lê os logs dos containers e os encaminha ao Loki; Grafana já inicia com a fonte de dados e o dashboard **Visão geral** configurados. Os logs ficam persistidos em volumes Docker, com retenção de sete dias no Loki. A API registra `x-request-id` em cada resposta e em cada evento de requisição; o mesmo identificador aparece em erros 500 no Grafana. Tokens, cookies e campos de senha são redigidos pelo logger.
+
+O dashboard permite filtrar por serviço e consultar logs por tenant informando seu ID. `reqId`, `userId` e `tenantId` são mantidos no corpo do log, não como labels do Loki. As credenciais do Grafana são configuradas por `GRAFANA_ADMIN_USER` e `GRAFANA_ADMIN_PASSWORD` no `.env`.
 
 ## Front-end
 
@@ -126,8 +152,13 @@ A interface foi desenvolvida em React e TypeScript e se adapta a telas grandes e
 | Novo cliente | `/clientes/novo` | Cadastrar pessoa física ou jurídica em quatro etapas: identificação, contato, endereço e revisão dos dados. O preenchimento do endereço pode buscar os dados pelo CEP. |
 | Editar cliente | `/clientes/:id/editar` | Atualizar os dados permitidos de um cadastro existente. O tipo de pessoa e o documento são preservados. |
 | Lixeira | `/lixeira` | Consultar clientes removidos, restaurá-los ou excluí-los definitivamente. As ações de remoção pedem confirmação. |
+| Login | `/entrar` | Entrar com e-mail e senha; uma rota protegida aberta sem sessão retorna ao login e pode ser retomada depois. |
+| Criar conta | `/criar-conta` | Criar o tenant da empresa e a conta inicial de administrador. |
+| Usuários | `/usuarios` | Administradores criam usuários do tenant e alteram os papéis de operador e leitor. |
 
 O cadastro valida os campos em cada etapa e apresenta os erros junto aos campos correspondentes. Antes de concluir, a etapa de revisão permite conferir e voltar para corrigir os dados. Os formulários também oferecem navegação por teclado, rótulos associados aos campos e mensagens de estado para tecnologias assistivas.
+
+As telas de clientes exigem a permissão `customer:read`; cadastro e edição exigem `customer:write`. A navegação e os controles de ação acompanham as permissões recebidas da sessão, sem substituir a autorização feita pela API. A interface consulta `GET /api/v1/auth/me` no início e usa cookies HTTP-only para login, renovação e logout.
 
 ### Capturas de tela
 
@@ -182,18 +213,28 @@ As rotas de clientes usam o prefixo `/api/v1`. A URL base é:
 http://localhost:3333/api/v1
 ```
 
+As rotas de clientes exigem o cookie `access_token`; o tenant usado nas consultas vem exclusivamente do JWT. `ADMIN` pode executar todas as ações, `OPERATOR` pode ler, cadastrar, editar, mover e restaurar clientes, e `VIEWER` pode apenas consultar. Clientes de outro tenant respondem como não encontrados.
+
 ### Rotas disponíveis
 
 | Método | Caminho | Parâmetros | Descrição |
 | --- | --- | --- | --- |
 | `GET` | `/health` | — | Verifica a disponibilidade da API e do banco. Retorna `200` ou `503`. |
+| `POST` | `/api/v1/auth/register` | Corpo JSON com dados do tenant e do usuário | Cria tenant e usuário `ADMIN`, inicia a sessão e define cookies httpOnly. |
+| `POST` | `/api/v1/auth/login` | E-mail e senha | Valida as credenciais e define cookies httpOnly; limite de 5 tentativas por minuto por IP/e-mail. |
+| `POST` | `/api/v1/auth/refresh` | Cookie `refresh_token` | Faz a rotação do refresh token e emite novo access token. |
+| `POST` | `/api/v1/auth/logout` | Cookies de autenticação | Revoga a sessão e limpa os cookies; a operação é idempotente. |
+| `GET` | `/api/v1/auth/me` | Cookie `access_token` | Retorna o usuário, tenant, role e permissões, ou `null` se não houver sessão válida. |
+| `GET` | `/api/v1/users` | — | Lista os usuários do tenant (permissão `user:manage`). |
+| `POST` | `/api/v1/users` | Corpo JSON | Cria um novo usuário no tenant com papel e senha inicial (permissão `user:manage`). |
+| `PATCH` | `/api/v1/users?id={id}` | Query obrigatória `id`; corpo JSON parcial | Altera nome ou papel de um usuário do tenant (permissão `user:manage`). |
 | `GET` | `/api/v1/customers` | Query opcional `id` | Lista clientes ativos; com `id`, retorna um cliente. Retorna `404` se o ID não for encontrado entre os ativos. |
 | `GET` | `/api/v1/customers/deleted` | — | Lista clientes na lixeira (removidos logicamente). |
-| `POST` | `/api/v1/customers` | Corpo JSON | Cadastra um cliente e seu endereço. Retorna `201` quando criado. |
+| `POST` | `/api/v1/customers` | Corpo JSON | Cadastra um cliente e seu endereço. Retorna `201` e `Location` para o cadastro criado. |
 | `PATCH` | `/api/v1/customers?id={id}` | Query obrigatória `id`; corpo JSON parcial | Atualiza os campos enviados. |
 | `DELETE` | `/api/v1/customers?id={id}` | Query obrigatória `id` | Move o cliente ativo para a lixeira. Retorna `204` sem corpo. |
 | `POST` | `/api/v1/customers/restore?id={id}` | Query obrigatória `id` | Restaura um cliente da lixeira. Retorna `200` sem corpo. |
-| `DELETE` | `/api/v1/customers/permanent?id={id}` | Query obrigatória `id` | Exclui permanentemente um cliente que esteja na lixeira. Retorna `204` sem corpo. |
+| `DELETE` | `/api/v1/customers/permanent?id={id}` | Query obrigatória `id` | Exclui permanentemente um cliente ativo ou removido. Retorna `204` sem corpo. |
 
 Os parâmetros `id` são enviados na query string, por exemplo:
 
@@ -258,17 +299,54 @@ Content-Type: application/json
 
 As consultas e o cadastro retornam os dados do cliente, incluindo `id`, `personType`, `name`, `document`, `phone`, `address`, `createdAt` e `deletedAt`. Também podem retornar `email`, `updatedAt`, `birthDate` (pessoa física) ou `tradeName` (pessoa jurídica).
 
-Erros de validação e de operação incluem uma mensagem descritiva. Entre os status usados pela API estão `400` (dados ou parâmetros inválidos), `404` (cliente não encontrado), `409` (conflito de cadastro) e `503` (serviço indisponível no health check). Consulte o Swagger para os schemas e respostas documentados de cada rota.
+Erros de validação e de operação usam `application/problem+json` (RFC 9457), com `type`, `title`, `status`, `detail` e `requestId`. Erros de validação também podem incluir o objeto `errors`, agrupado por campo. Consulte o Swagger para os schemas e respostas documentados de cada rota.
+
+Os tokens de autenticação são enviados somente em cookies `httpOnly` com `SameSite=Strict`; em produção, também usam `Secure`. O access token expira em 15 minutos e o refresh token em 7 dias. O logout revoga o refresh token; um access token já emitido pode continuar válido por até 15 minutos.
+
+## Seeds de demonstração
+
+Os dados de demonstração são criados somente mediante comando explícito — nunca na subida normal. Use `./start.sh --seed` ou o atalho equivalente `npm run seed`. O comando inicia a aplicação, executa o seed Prisma dentro do container da API e pode ser repetido sem duplicar registros.
+
+São criados os tenants **Empresa Alfa** e **Empresa Beta**, cada um com usuários `admin`, `operador` e `leitor`. Todos usam a senha definida em `SEED_USER_PASSWORD`; os e-mails são exibidos ao término do comando. Cada tenant recebe 55 clientes determinísticos, incluindo pessoas físicas e jurídicas, CNPJ numérico e alfanumérico, endereços com e sem complemento, números `S/N` e cinco clientes na lixeira. Um CPF é compartilhado pelos dois tenants para demonstrar a unicidade por tenant.
+
+## Testes
+
+Execute os testes dos pacotes a partir da raiz:
+
+```bash
+npm test
+```
+
+Os testes end-to-end da interface usam Playwright e a versão compilada da aplicação. O comando cria uma stack Docker com banco e volume próprios para QA, prepara dados novos em cada teste e remove a stack e o volume ao terminar:
+
+```bash
+npm run test:e2e
+# ou
+./start.sh --qa
+```
+
+O relatório HTML fica em `apps/e2e/playwright-report`. Em falhas, o Playwright guarda trace, screenshot e vídeo em `apps/e2e/test-results`. Os testes são executados em Chromium nos perfis desktop `1280 × 800` e celular `360 × 640` e `390 × 844`; também verificam acessibilidade com axe e falham diante de erros/avisos no console ou respostas 5xx. Para ajustar portas locais, defina `QA_WEB_PORT`, `QA_API_PORT` e `QA_DB_PORT`.
+
+Os testes da API usam Vitest e `Fastify.inject()`, com dublês nos limites dos serviços; a suíte unitária não precisa de banco nem de rede. A cobertura de linhas e branches de `apps/api/src` deve permanecer em pelo menos 80%, e o comando falha se ficar abaixo desse limite.
+
+O teste de isolamento entre tenants com PostgreSQL real não roda no `npm test` padrão. O comando abaixo cria uma stack Docker temporária e isolada, aplica as migrações e a remove ao terminar:
+
+```bash
+npm run test:integration --workspace @cadastro-clientes/api-v2
+```
+
+Para reutilizar um banco PostgreSQL de teste já migrado, informe `TEST_DATABASE_URL` antes do comando. Nesse caso, a stack Docker temporária não é criada.
 
 ## Modelos e validações
 
 - **Pessoa física:** CPF válido, nome com 3 a 150 caracteres, e-mail válido, telefone brasileiro e data de nascimento entre `1900-01-01` e a data atual.
 - **Pessoa jurídica:** CNPJ válido; nome fantasia é opcional.
-- **Documento e e-mail:** não podem ser repetidos entre os clientes cadastrados.
+- **Documento:** único dentro de cada tenant, também quando o cadastro está na lixeira; CPF/CNPJ são normalizados sem pontuação e CNPJ alfanumérico fica em maiúsculas. Documento e tipo de pessoa não podem ser alterados.
+- **E-mail de cliente:** removidos espaços externos e normalizado para minúsculas; permanece com unicidade global.
 - **Telefone:** validado como número brasileiro e armazenado apenas com dígitos.
 - **Endereço:** CEP com 8 dígitos (com ou sem hífen) e UF correspondente a um estado brasileiro.
 - **Remoção lógica:** o cliente permanece armazenado e pode ser consultado na lixeira e restaurado.
-- **Exclusão permanente:** remove também o endereço associado e não pode ser desfeita.
+- **Exclusão permanente:** remove também o endereço associado e não pode ser desfeita; pode ser aplicada a clientes ativos ou na lixeira.
 
 ## Comandos úteis
 
@@ -276,10 +354,15 @@ Erros de validação e de operação incluem uma mensagem descritiva. Entre os s
 ./start.sh --help   # Exibe as opções disponíveis
 ./start.sh --logs   # Acompanha os logs dos serviços
 ./start.sh --stop   # Para os serviços, preservando os dados
-./start.sh --reset  # Apaga os volumes do banco e inicia tudo novamente
+./start.sh --reset  # Apaga os dados do banco e inicia tudo novamente, preservando logs
+./start.sh --seed   # Cria ou atualiza os dados de demonstração
+./start.sh --reset --seed  # Redefine o banco e recria os dados de demonstração
+./start.sh --qa     # Executa QA E2E em ambiente isolado
+./start.sh --test   # Executa os testes unitários da API
+./start.sh --test-integration  # Executa os testes de integração da API
 ```
 
-> **Atenção:** `./start.sh --reset` apaga permanentemente os dados persistidos no banco. O script solicita que você digite `RESET` antes de continuar.
+> **Atenção:** `./start.sh --reset` apaga permanentemente os dados persistidos no banco, mas preserva os logs coletados. O script solicita que você digite `RESET` antes de continuar.
 
 Os pacotes também têm comandos próprios:
 
@@ -290,3 +373,4 @@ Os pacotes também têm comandos próprios:
 | `apps/api` | `npm start` | Inicia a API compilada. |
 | `apps/web` | `npm run dev` | Inicia o servidor de desenvolvimento Vite. |
 | `apps/web` | `npm run build` | Verifica os tipos e gera a versão de produção. |
+| `apps/e2e` | `npm test` | Executa a suíte de testes E2E com Playwright. |
