@@ -6,7 +6,8 @@ readonly API_HEALTH_TIMEOUT=180
 readonly POLL_INTERVAL=5
 readonly API_SERVICE="api"
 readonly GRAFANA_SERVICE="grafana"
-readonly DATABASE_VOLUME="cadastro-clientes_postgres_data"
+readonly CLOUDFLARE_SERVICE="cloudflared"
+readonly DATABASE_VOLUME="cc_postgres_data"
 LOADING_PID=""
 COMPOSE_OUTPUT_FILE=""
 INTEGRATION_TEST_DB_NAME=""
@@ -18,19 +19,21 @@ Uso: ./start.sh [opção]
 
 Opções:
   --help           Mostra esta ajuda.
+  --url            Exibe o domínio público gerado pelo Cloudflare Tunnel.
   --stop           Para os serviços sem apagar os dados.
   --logs           Acompanha os logs dos serviços.
   --seed           Inicia a aplicação e cria ou atualiza os dados de demonstração.
   --qa             Executa os testes E2E em ambiente isolado e gera o relatório HTML.
-  --test            Executa os testes unitários da API.
+  --test           Executa os testes unitários da API.
   --test-integration Executa os testes de integração da API.
   --reset          Apaga os dados do banco e inicia a aplicação novamente
                    (exige confirmação explícita; preserva os logs).
   --reset --seed   Apaga os dados, inicia a aplicação e recria os dados de demonstração.
 
 Sem opções, cria .env a partir de .env.example se necessário, constrói
-as imagens, inicia os serviços e aguarda a API e o Grafana ficarem
-saudáveis (limite de 180 segundos para cada serviço).
+as imagens, inicia os serviços, aguarda a API e o Grafana ficarem
+saudáveis (limite de 180 segundos para cada serviço) e exibe o domínio
+público do Cloudflare.
 EOF
 }
 
@@ -194,11 +197,39 @@ wait_for_service() {
   return 1
 }
 
+get_cloudflare_url() {
+  local timeout="${1:-30}"
+  local elapsed=0
+  local url=""
+
+  while (( elapsed < timeout )); do
+    url="$(compose logs "$CLOUDFLARE_SERVICE" 2>&1 | grep -oE 'https://[a-zA-Z0-9-]+\.trycloudflare\.com' | tail -n 1 || true)"
+    if [[ -n "$url" ]]; then
+      printf '%s\n' "$url"
+      return 0
+    fi
+    sleep 1
+    elapsed=$((elapsed + 1))
+  done
+
+  return 1
+}
+
+print_cloudflare_url() {
+  local url
+  url="$(get_cloudflare_url 5 || true)"
+  if [[ -n "$url" ]]; then
+    printf '%s\n' "$url"
+  else
+    fail "Não foi possível obter o domínio do Cloudflare. Verifique se os serviços estão em execução com './start.sh --logs'."
+  fi
+}
+
 run_compose_up() {
   local compose_pid
   local compose_status=0
 
-  COMPOSE_OUTPUT_FILE="$(mktemp "${TMPDIR:-/tmp}/cadastro-clientes-compose.XXXXXX")" ||
+  COMPOSE_OUTPUT_FILE="$(mktemp "${TMPDIR:-/tmp}/cc-compose.XXXXXX")" ||
     fail "Não foi possível criar um arquivo temporário para capturar a saída do Docker Compose."
 
   compose up -d --build >"$COMPOSE_OUTPUT_FILE" 2>&1 &
@@ -227,26 +258,30 @@ start_application() {
   if ! wait_for_service "$API_SERVICE"; then
     stop_loading
     printf 'Logs relevantes dos serviços:\n' >&2
-    compose logs --tail=100 api db web loki alloy grafana >&2 || true
+    compose logs --tail=100 api db web loki alloy grafana "$CLOUDFLARE_SERVICE" >&2 || true
     return 1
   fi
 
   if ! wait_for_service "$GRAFANA_SERVICE"; then
     stop_loading
     printf 'Logs relevantes dos serviços:\n' >&2
-    compose logs --tail=100 api db web loki alloy grafana >&2 || true
+    compose logs --tail=100 api db web loki alloy grafana "$CLOUDFLARE_SERVICE" >&2 || true
     return 1
   fi
 
+  local cloudflare_url
+  cloudflare_url="$(get_cloudflare_url 30 || true)"
+
   stop_loading
 
-  cat <<'EOF'
+  cat <<EOF
 
 Aplicação pronta!
-  Interface:    http://localhost:8080
-  API:          http://localhost:3333
-  Documentação: http://localhost:3333/docs
-  Logs:         http://localhost:3000
+  Domínio Cloudflare: ${cloudflare_url:-Não disponível (verifique os logs com: ./start.sh --logs)}
+  Interface:          http://localhost:8080
+  API:                http://localhost:3333
+  Documentação:       http://localhost:3333/docs
+  Logs:               http://localhost:3000
 EOF
 }
 
@@ -358,6 +393,7 @@ main() {
   local integration_test_requested=false
   local stop_requested=false
   local logs_requested=false
+  local url_requested=false
 
   for option in "$@"; do
     case "$option" in
@@ -368,6 +404,9 @@ main() {
         fi
         usage
         return 0
+        ;;
+      --url)
+        url_requested=true
         ;;
       --stop)
         stop_requested=true
@@ -396,6 +435,16 @@ main() {
         ;;
     esac
   done
+
+  if [[ "$url_requested" == true ]]; then
+    if (( $# != 1 )); then
+      usage >&2
+      fail "A opção --url não pode ser combinada com outras opções."
+    fi
+    check_prerequisites
+    print_cloudflare_url
+    return
+  fi
 
   if [[ "$qa_requested" == true ]]; then
     if (( $# != 1 )); then
@@ -457,6 +506,9 @@ main() {
     compose down
     if docker volume inspect "$DATABASE_VOLUME" >/dev/null 2>&1; then
       docker volume rm "$DATABASE_VOLUME" >/dev/null
+    fi
+    if docker volume inspect "cadastro-clientes_postgres_data" >/dev/null 2>&1; then
+      docker volume rm "cadastro-clientes_postgres_data" >/dev/null
     fi
   fi
 

@@ -1,4 +1,4 @@
-name: cadastro-clientes
+name: cc
 services:
   db:
     image: postgres:18-alpine
@@ -67,6 +67,16 @@ services:
         api:
             condition: service_healthy
     networks:
+        - public_net
+
+  cloudflared:
+      image: cloudflare/cloudflared:2026.11.1
+      restart: always
+      command: tunnel --no-autoupdate --url http://web:8080
+      mem_limit: 128m
+      depends_on:
+        - web
+      networks:
         - public_net
 
   loki:
