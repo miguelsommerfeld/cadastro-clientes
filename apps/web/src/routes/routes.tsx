@@ -160,43 +160,39 @@ function TrashPage() {
 
 function NotFoundPage() {
   return (
-    <div className="min-h-dvh bg-[#f5f7f8] text-slate-900 md:flex">
-      <HomeNavigation view="active" />
-      <div className="min-w-0 flex-1 pb-24 md:pb-0">
-        <HomeHeader view="active" />
-        <main
-          id="main-content"
-          className="mx-auto flex min-h-[60dvh] max-w-3xl flex-col items-center justify-center px-5 py-12 text-center"
-        >
-          <p className="text-sm font-bold uppercase tracking-widest text-teal-800">
-            Erro 404
-          </p>
-          <h1 className="mt-2 text-3xl font-bold text-slate-900">
-            Página não encontrada
-          </h1>
-          <p className="mt-3 max-w-md text-sm leading-6 text-slate-600">
-            O endereço pode ter sido removido ou não existe. Volte à listagem para
-            continuar.
-          </p>
-          <Link
-            to="/"
-            className="mt-6 inline-flex min-h-12 items-center rounded-xl bg-teal-800 px-5 text-sm font-bold text-white hover:bg-teal-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
+    <RequireAuth>
+      <div className="min-h-dvh bg-[#f5f7f8] text-slate-900 md:flex">
+        <HomeNavigation view="active" />
+        <div className="min-w-0 flex-1 pb-24 md:pb-0">
+          <HomeHeader view="active" />
+          <main
+            id="main-content"
+            className="mx-auto flex min-h-[60dvh] max-w-3xl flex-col items-center justify-center px-5 py-12 text-center"
           >
-            Ir para clientes
-          </Link>
-        </main>
+            <p className="text-sm font-bold uppercase tracking-widest text-teal-800">
+              Erro 404
+            </p>
+            <h1 className="mt-2 text-3xl font-bold text-slate-900">
+              Página não encontrada
+            </h1>
+            <p className="mt-3 max-w-md text-sm leading-6 text-slate-600">
+              O endereço pode ter sido removido ou não existe. Volte à listagem para
+              continuar.
+            </p>
+            <Link
+              to="/"
+              className="mt-6 inline-flex min-h-12 items-center rounded-xl bg-teal-800 px-5 text-sm font-bold text-white hover:bg-teal-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
+            >
+              Ir para clientes
+            </Link>
+          </main>
+        </div>
       </div>
-    </div>
+    </RequireAuth>
   )
 }
 
-function ProtectedPage({
-  permission,
-  children,
-}: {
-  permission: Permission
-  children: React.ReactNode
-}) {
+function RequireAuth({ children }: { children: React.ReactNode }) {
   const auth = useAuth()
 
   useEffect(() => {
@@ -236,8 +232,23 @@ function ProtectedPage({
     )
   }
   if (!auth.user) return <FormLoading />
-  if (!auth.hasPermission(permission)) return <AccessDeniedPage />
   return children
+}
+
+function ProtectedPage({
+  permission,
+  children,
+}: {
+  permission: Permission
+  children: React.ReactNode
+}) {
+  const auth = useAuth()
+
+  return (
+    <RequireAuth>
+      {!auth.hasPermission(permission) ? <AccessDeniedPage /> : children}
+    </RequireAuth>
+  )
 }
 
 function AccessDeniedPage() {
