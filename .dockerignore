@@ -1,5 +1,6 @@
 node_modules
 docs
+skills
 .vscode
 .env.example
 .gitignore

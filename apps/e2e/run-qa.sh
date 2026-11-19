@@ -3,8 +3,8 @@ set -euo pipefail
 
 readonly SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 readonly ROOT_DIR="$(cd -- "$SCRIPT_DIR/../.." && pwd)"
-readonly ENV_FILE="$(mktemp "${TMPDIR:-/tmp}/cadastro-clientes-qa.XXXXXX")"
-readonly PROJECT_NAME="cadastro-clientes-qa-${USER:-local}-$$"
+readonly ENV_FILE="$(mktemp "${TMPDIR:-/tmp}/cc-qa.XXXXXX")"
+readonly PROJECT_NAME="cc-qa-${USER:-local}-$$"
 readonly WEB_PORT="${QA_WEB_PORT:-18080}"
 readonly API_PORT="${QA_API_PORT:-13333}"
 readonly DB_PORT="${QA_DB_PORT:-15432}"
