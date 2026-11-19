@@ -75,7 +75,17 @@ test.beforeEach(({ page }, testInfo) => {
       response.url().includes('/api/v1/')
     ) {
       // Chromium logs handled API 4xx responses as console errors even when the UI handles them.
-      browserErrors.handledApiErrors.push(response.status())
+      // If console event already fired before response event, remove it from failures.
+      const failureIndex = browserErrors.failures.findIndex(
+        (f) =>
+          f.startsWith('console.error: Failed to load resource:') &&
+          f.includes(`status of ${response.status()}`),
+      )
+      if (failureIndex !== -1) {
+        browserErrors.failures.splice(failureIndex, 1)
+      } else {
+        browserErrors.handledApiErrors.push(response.status())
+      }
     }
     if (response.status() === 404 && !response.url().includes('/api/v1/')) {
       browserErrors.failures.push(`404 ${response.url()}`)
@@ -84,7 +94,21 @@ test.beforeEach(({ page }, testInfo) => {
 })
 
 test.afterEach(async ({}, testInfo) => {
-  expect(browserFailures.get(testInfo)?.failures ?? []).toEqual([])
+  const browserErrors = browserFailures.get(testInfo)
+  if (browserErrors) {
+    for (let i = browserErrors.failures.length - 1; i >= 0; i--) {
+      const failure = browserErrors.failures[i]
+      if (failure.startsWith('console.error: Failed to load resource:')) {
+        const status = Number(failure.match(/status of (\d{3})/)?.[1])
+        const handledIndex = browserErrors.handledApiErrors.indexOf(status)
+        if (handledIndex !== -1) {
+          browserErrors.handledApiErrors.splice(handledIndex, 1)
+          browserErrors.failures.splice(i, 1)
+        }
+      }
+    }
+  }
+  expect(browserErrors?.failures ?? []).toEqual([])
 })
 
 export async function createAccount(

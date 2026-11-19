@@ -92,7 +92,7 @@ describe("section 7 document validator examples", () => {
         }).success).toBe(false);
         expect(customerRegistrationSchema.safeParse({
             ...individual,
-            birthDate: "2026-11-05"
+            birthDate: "2099-01-01"
         }).success).toBe(false);
     });
 

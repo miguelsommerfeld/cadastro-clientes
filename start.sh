@@ -260,7 +260,7 @@ run_qa() {
 }
 
 run_api_tests() {
-  npm run test --workspace @cadastro-clientes/api-v1
+  npm run test --workspace @cadastro-clientes/api-v2
 }
 
 run_api_integration_tests() {
@@ -343,7 +343,7 @@ run_api_integration_tests() {
   )
 
   local test_status=0
-  npm run test:integration --workspace @cadastro-clientes/api-v1 || test_status=$?
+  npm run test:integration --workspace @cadastro-clientes/api-v2 || test_status=$?
 
   drop_integration_test_db "$test_db_name" "$test_db_url"
   return "$test_status"
