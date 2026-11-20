@@ -3,7 +3,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from '@/auth/auth-context'
 import { AppErrorBoundary } from '@/components/app-error-boundary'
 import { queryClient } from '@/services/query-client'
-import { router } from '@/routes/routes'
+import { router } from '@/routes/app.routes'
 
 export default function App() {
   return (

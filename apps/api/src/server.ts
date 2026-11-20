@@ -22,10 +22,10 @@ const { env } = await import("../config/env.ts");
 const [{ default: dependencies }, { default: healthcheck }, { default: customersRoutes }, { default: authRoutes }, { default: usersRoutes }] =
     await Promise.all([
         import("../config/dependencies.ts"),
-        import("./routes/healthcheck.ts"),
-        import("./routes/customers.ts"),
-        import("./routes/auth.ts"),
-        import("./routes/users.ts")
+        import("./routes/healthcheck.routes.ts"),
+        import("./routes/customers.routes.ts"),
+        import("./routes/auth.routes.ts"),
+        import("./routes/users.routes.ts")
     ]);
 
 export const server = Fastify({
