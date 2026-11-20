@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import usersRoute from "../../src/routes/users";
+import usersRoute from "../../src/routes/users.routes";
 import { userSchema } from "@packages/contracts/auth.schema";
 import {
     accessCookie,

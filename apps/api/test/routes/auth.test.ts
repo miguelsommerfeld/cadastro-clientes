@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import authRoute from "../../src/routes/auth";
+import authRoute from "../../src/routes/auth.routes";
 import { authSessionUserSchema } from "@packages/contracts/auth.schema";
 import { expectProblemDetails, createRouteApp, requestId } from "../support/route-app";
 

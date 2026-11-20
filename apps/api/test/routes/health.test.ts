@@ -18,7 +18,7 @@ vi.mock("@db", () => ({
     }
 }));
 
-import healthRoute from "../../src/routes/healthcheck";
+import healthRoute from "../../src/routes/healthcheck.routes";
 
 describe("GET /health", () => {
     let app: Awaited<ReturnType<typeof createRouteApp>>["app"] | undefined;

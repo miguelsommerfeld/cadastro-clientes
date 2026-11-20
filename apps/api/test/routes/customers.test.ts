@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import customersRoute from "../../src/routes/customers";
+import customersRoute from "../../src/routes/customers.routes";
 import {
     customersResponseSchema,
     type CustomerResponse
